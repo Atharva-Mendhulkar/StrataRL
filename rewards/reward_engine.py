@@ -5,10 +5,14 @@ from rewards.token_repetition  import token_repetition_penalty
 from rewards.outcome_verifiers import DOMAIN_VERIFIERS
 
 
-def gdpo_normalize(x: torch.Tensor, threshold: float = 1e-3) -> torch.Tensor:
+def gdpo_normalize(
+    x: torch.Tensor, 
+    threshold: float = 1e-3,
+    cooldown_active: bool = False
+) -> torch.Tensor:
     """
     Z-normalize a [B, G] reward tensor across G per row.
-    If std < threshold, inject randomized structured variance to preserve gradient direction.
+    If std < threshold and cooldown is not active, inject randomized structured variance.
     """
     mu  = x.mean(dim=1, keepdim=True)
     std = x.std(dim=1, keepdim=True)
@@ -18,15 +22,12 @@ def gdpo_normalize(x: torch.Tensor, threshold: float = 1e-3) -> torch.Tensor:
     z = (x - mu) / (std + 1e-8)
     
     # Prevent zero-variance -> zero-gradient collapse
-    low_var_mask = std < threshold
+    # If cooldown is active, we skip noise injection to allow the policy to stabilize
+    low_var_mask = (std < threshold) & (~cooldown_active)
     
-    # For low variance groups, inject minimal randomized structured variance
     if low_var_mask.any():
         mask_sq = low_var_mask.squeeze(-1)
-        # Create base noise
         noise_base = torch.linspace(-0.01, 0.01, steps=G, device=x.device)
-        # Apply to each low-variance row with a distinct permutation
-        # This guarantees per-row independence and zero-mean preservation
         for i in range(B):
             if mask_sq[i]:
                 perm = torch.randperm(G, device=x.device)
@@ -42,16 +43,10 @@ def score_batch(
     w_outcome:     float = 0.7,
     w_struct:      float = 0.3,
     phase:         str = "strict",
+    gdpo_cooldown: bool = False, # Pass cooldown state from training loop
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """
-    Score a batch of rollouts.
-    
-    In 'bootstrap' phase:
-    - structural weight is increased to 0.7 to provide stronger formatting signal
-    
-    Returns:
-        gdpo_rewards: [B, G]  — GDPO-aggregated composite reward
-        raw_rewards:  [3, B, G] — [outcome, struct, token_rep] before aggregation
+    Score a batch of rollouts with support for GDPO stabilization cooldowns.
     """
     if phase == "bootstrap":
         w_outcome_eff = 0.3
@@ -76,12 +71,11 @@ def score_batch(
                 rollout["token_ids"][j]
             )
 
-    # Gate structural with token repetition
     struct_gated = struct_r * token_rep
 
-    # GDPO: normalize each signal independently, then combine
-    z_outcome = gdpo_normalize(outcome_r)
-    z_struct  = gdpo_normalize(struct_gated)
+    # GDPO normalization with cooldown-aware noise injection
+    z_outcome = gdpo_normalize(outcome_r, cooldown_active=gdpo_cooldown)
+    z_struct  = gdpo_normalize(struct_gated, cooldown_active=gdpo_cooldown)
 
     gdpo_rewards = w_outcome_eff * z_outcome + w_struct_eff * z_struct
     raw_rewards  = torch.stack([outcome_r, struct_r, token_rep], dim=0)

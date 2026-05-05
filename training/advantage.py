@@ -7,17 +7,12 @@ ADVANTAGE_CLIP    = 5.0
 
 
 def compute_san_advantages(
-    rewards:    torch.Tensor,   # [B, G] — GDPO-aggregated composite rewards
-    domains:    List[str],      # length B — domain label per prompt
+    rewards:    torch.Tensor,   # [B, G]
+    domains:    List[str],      # length B
     eps:        float = 1e-8,
 ) -> torch.Tensor:
     """
     Stratified Advantage Normalization.
-
-    Computes Z-score normalization WITHIN each domain stratum independently.
-    Prevents cross-stratum bias from heterogeneous reward distributions.
-
-    Returns advantages: [B, G], clipped to ±ADVANTAGE_CLIP
     """
     advantages = torch.zeros_like(rewards)
     unique_domains = set(domains)
@@ -26,15 +21,12 @@ def compute_san_advantages(
         stratum_idx = [i for i, d in enumerate(domains) if d == domain]
 
         if len(stratum_idx) < 2:
-            # Single-sample stratum: zero advantage (no comparison possible)
             advantages[stratum_idx] = 0.0
             continue
 
-        stratum_rewards = rewards[stratum_idx]       # [n_d, G]
+        stratum_rewards = rewards[stratum_idx]
         
-        # ── Reward Consistency Guard ──────────────────────────────────────────
-        # Fallback to centered rewards if variance is too low for normalization.
-        # This preserves gradient directionality without amplifying noise.
+        # Reward Consistency Guard: Fallback to centered rewards
         if stratum_rewards.std() < 1e-3:
             centered = stratum_rewards - stratum_rewards.mean()
             advantages[stratum_idx] = torch.clamp(centered, -ADVANTAGE_CLIP, ADVANTAGE_CLIP)
@@ -52,12 +44,13 @@ def compute_san_advantages(
 
 def expand_advantages_to_tokens(
     advantages:          torch.Tensor,        # [B, G]
-    completion_lengths:  List[List[int]],     # [B][G] — token counts per completion
+    completion_lengths:  List[List[int]],     # [B][G]
     use_length_norm:     bool = True,
+    length_norm_coeff:   float = 0.01,        # Adaptive coefficient to combat verbosity bias
 ) -> torch.Tensor:
     """
     Expand scalar per-completion advantages to per-token advantages.
-    Applies linear length normalization to prevent excessive gradient shrinkage.
+    Applies linear length normalization: adv * (1 / (1 + coeff * length))
     """
     token_advantages = []
     for b in range(advantages.shape[0]):
@@ -67,7 +60,7 @@ def expand_advantages_to_tokens(
 
             if use_length_norm and length > 0:
                 clamped_length = min(length, LENGTH_NORM_CLAMP)
-                norm_factor    = 1.0 / (1.0 + 0.01 * clamped_length)
+                norm_factor    = 1.0 / (1.0 + length_norm_coeff * clamped_length)
                 adv_scalar     = adv_scalar * norm_factor
 
             token_advantages.extend([adv_scalar] * length)
