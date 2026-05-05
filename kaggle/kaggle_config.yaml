@@ -1,0 +1,34 @@
+model_id:       "Qwen/Qwen2.5-3B-Instruct"  # Target 3B model for Kaggle
+device:         "cuda"
+dtype:          "bfloat16"
+
+# Training
+num_steps:      1000   # Production duration
+G:              8      # Increased for better ranking variance
+batch_size:     4
+
+# LoRA (PEFT)
+lora_r:         16     # Increased capacity for 3B model
+lora_alpha:     32
+target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+
+# GRPO (Kaggle Production Baseline)
+beta:           0.015
+clip_eps:       0.15
+lr:             5e-6   # Lowered for larger model stability
+max_new_tokens: 2048   # Full reasoning chain support
+min_new_tokens: 50
+temperature:    0.85
+
+# Rewards
+w_outcome:      0.65
+w_struct:       0.35
+
+# Domains (Full Suite)
+domains:        ["gsm8k", "strategyqa", "mmlu", "svamp"]
+samples_per_domain: 500
+
+# Monitoring
+log_every:      1
+eval_every:     50
+wandb_project:  "stratarl_production_v1"

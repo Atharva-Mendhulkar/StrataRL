@@ -24,21 +24,21 @@ class SmokeTestMonitor:
         gdpo_rewards = losses.get("gdpo_rewards", torch.zeros(1))
         pos_ratio = (gdpo_rewards > 0).float().mean().item()
         
-        # Rollout Diversity
+        # ── Rollout Diversity & Behavior ──────────────────────────────────────
         unique_completions = len(set(rollouts[0]["completions"]))
         G = len(rollouts[0]["completions"])
         prefix_diversity = unique_completions / G
 
         metrics = {
             "step": step,
-            "train/loss":                losses["loss"].item(),
-            "train/policy_loss":          losses["policy_loss"].item(),
-            "train/kl":                   losses["kl"].item(),
-            "train/raw_kl_mean":          losses.get("raw_kl_mean", 0.0),
-            "train/entropy":              losses["entropy"].item(),
-            "train/rollout_entropy":      losses.get("rollout_entropy", 0.0),
-            "train/ratio_clipped_frac":   losses.get("ratio_clipped_frac", 0.0),
-            "train/grad_norm":            losses.get("grad_norm", 0.0),
+            "train/loss":               losses["loss"].item(),
+            "train/policy_loss":         losses["policy_loss"].item(),
+            "train/kl":                  losses["kl"].item(),
+            "train/raw_kl_mean":         losses.get("raw_kl_mean", 0.0),
+            "train/entropy":             losses["entropy"].item(),
+            "train/rollout_entropy":     losses.get("rollout_entropy", 0.0),
+            "train/ratio_clipped_frac":  losses.get("ratio_clipped_frac", 0.0),
+            "train/grad_norm":           losses.get("grad_norm", 0.0),
             
             "learning/outcome_reward_mean": outcome_r.mean().item(),
             "learning/outcome_reward_std":  outcome_std,
@@ -50,7 +50,6 @@ class SmokeTestMonitor:
             "learning/mean_abs_advantage":   losses.get("mean_abs_adv", 0.0),
             "learning/advantage_std":        losses.get("advantage_std", 0.0),
             "meta/phase_bootstrap":          1 if phase == "bootstrap" else 0,
-            "meta/temperature":              losses.get("temperature", 0.0),
         }
         
         # Add domain specific metrics

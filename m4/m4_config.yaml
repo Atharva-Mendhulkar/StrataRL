@@ -12,19 +12,19 @@ lora_r:         8
 lora_alpha:     16
 target_modules: ["q_proj", "v_proj"]
 
-# GRPO
-beta:           0.01
-clip_eps:       0.2
+# GRPO (Kaggle Stabilized)
+beta:           0.015  # Increased from 0.01 to dampen signal
+clip_eps:       0.15   # Tightened from 0.2 to stabilize variance
 lr:             1e-5
-max_new_tokens: 200
-min_new_tokens: 20
-temperature:    0.9
+max_new_tokens: 256
+min_new_tokens: 30
+temperature:    0.85   # Refined from 0.9
 
-# Rewards
-w_outcome:      0.7
-w_struct:       0.3
+# Rewards (Slightly Dampened)
+w_outcome:      0.65   # Shifted from 0.7
+w_struct:       0.35   # Shifted from 0.3
 
-# Domains (reduced for speed)
+# Domains
 domains:        ["gsm8k", "strategyqa"]
 samples_per_domain: 20
 

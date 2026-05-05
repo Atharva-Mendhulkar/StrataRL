@@ -97,7 +97,7 @@ def run_smoke_test(config_path: str = "m4/m4_config.yaml"):
     )
     model     = get_peft_model(base_model, lora_config)
     
-    # ── Final Pre-Run Sanity Snapshot ─────────────────────────────────────────
+    # Pre-run Snapshot
     print({
         "device": device,
         "dtype": str(next(model.parameters()).dtype),
@@ -144,13 +144,13 @@ def run_smoke_test(config_path: str = "m4/m4_config.yaml"):
             temperature    = current_temp,
         )
         
-        # ── Temperature Hysteresis ───────────────────────────────────────────
-        # Prevents oscillation while ensuring sufficient exploration
+        # ── Adaptive Temperature with Hysteresis ──────────────────────────────
         unique_count = len(set(rollouts[0]["completions"]))
         diversity    = unique_count / cfg["G"]
         if diversity < 0.3:
             current_temp = min(1.0, current_temp + 0.05)
         elif diversity > 0.6:
+            # Decay back to baseline to avoid runaway randomness
             current_temp = max(cfg["temperature"], current_temp - 0.02)
 
         # Reward computation
@@ -168,14 +168,19 @@ def run_smoke_test(config_path: str = "m4/m4_config.yaml"):
         input_ids, attention_mask, completion_mask, old_logprobs = \
             _pack_rollouts(rollouts, tokenizer, device)
 
-        # ── Token Accounting Assertion ────────────────────────────────────────
-        # Verifies that advantages are correctly mapped to tokens after packing
-        total_tokens_expected = sum(sum(l) for l in comp_lengths)
-        total_tokens_actual   = completion_mask.sum().item()
-        assert abs(total_tokens_expected - total_tokens_actual) < 5, \
-            f"Token mismatch: expected {total_tokens_expected}, actual {total_tokens_actual}. Alignment drift!"
+        # ── Exact Token Accounting Assertion ──────────────────────────────────
+        expected_tokens = sum(sum(l) for l in comp_lengths)
+        actual_tokens   = completion_mask.sum().item()
+        assert abs(expected_tokens - actual_tokens) < 1e-3, \
+            f"Token accounting mismatch: expected {expected_tokens}, actual {actual_tokens}"
 
         token_adv_tensor = _expand_to_seq(token_advs, input_ids.shape, completion_mask)
+
+        # ── Rollout Entropy ───────────────────────────────────────────────────
+        # Calculated before backward() to detect sampling behavior
+        with torch.no_grad():
+            token_ent = -(torch.exp(old_logprobs) * old_logprobs)
+            rollout_ent = (token_ent * completion_mask).sum() / (completion_mask.sum() + 1e-8)
 
         # GRPO loss
         model.train()
@@ -192,13 +197,14 @@ def run_smoke_test(config_path: str = "m4/m4_config.yaml"):
         )
         losses["loss"].backward()
         
-        # ── Gradient Diagnostics ──────────────────────────────────────────────
+        # NaN Guard
         for name, p in model.named_parameters():
             if p.grad is not None and torch.isnan(p.grad).any():
                 raise RuntimeError(f"NaN gradient detected in {name} at step {step}")
         
         grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         losses["grad_norm"] = grad_norm.item()
+        losses["rollout_entropy"] = rollout_ent.item()
         
         optimizer.step()
 
@@ -208,16 +214,10 @@ def run_smoke_test(config_path: str = "m4/m4_config.yaml"):
             domain_advantages_map[d].extend(advantages[i].tolist())
         scheduler.update(domain_advantages_map)
 
-        # ── Rollout Entropy (Sampled Behavior) ────────────────────────────────
-        # Detects mode collapse before policy entropy shows it
-        token_entropy_t = -torch.exp(old_logprobs) * old_logprobs
-        losses["rollout_entropy"] = (token_entropy_t * completion_mask).sum().item() / (completion_mask.sum().item() + 1e-8)
-        
         # Add diagnostic metrics for monitoring
         losses["advantage_std"] = advantages.std().item()
         losses["mean_abs_adv"]  = advantages.abs().mean().item()
         losses["gdpo_rewards"]  = gdpo_rewards
-        losses["temperature"]   = current_temp
 
         # Monitoring
         alerts = monitor.log_step(step, losses, rollouts, raw_rewards, domain_advantages_map, phase=phase)
@@ -227,8 +227,8 @@ def run_smoke_test(config_path: str = "m4/m4_config.yaml"):
         if step % 5 == 0:
             print(f"[Step {step:3d}] loss={losses['loss']:.4f} "
                   f"raw_kl={losses['raw_kl_mean']:.4f} "
-                  f"adv={losses['mean_abs_adv']:.4f} "
-                  f"temp={current_temp:.2f} "
+                  f"mean_abs_adv={losses['mean_abs_adv']:.4f} "
+                  f"rollout_ent={losses['rollout_entropy']:.3f} "
                   f"domain={domain}")
 
     print("\n✓ Smoke test completed (50 steps)")

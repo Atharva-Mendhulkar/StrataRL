@@ -33,8 +33,8 @@ def compute_san_advantages(
         stratum_rewards = rewards[stratum_idx]       # [n_d, G]
         
         # ── Reward Consistency Guard ──────────────────────────────────────────
-        # If signal is weak, fallback to centered rewards instead of zeroing out
-        # This preserves directionality while avoiding noise amplification
+        # Fallback to centered rewards if variance is too low for normalization.
+        # This preserves gradient directionality without amplifying noise.
         if stratum_rewards.std() < 1e-3:
             centered = stratum_rewards - stratum_rewards.mean()
             advantages[stratum_idx] = torch.clamp(centered, -ADVANTAGE_CLIP, ADVANTAGE_CLIP)

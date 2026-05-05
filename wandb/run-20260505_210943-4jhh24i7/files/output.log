@@ -1,0 +1,43 @@
+The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+From v4.47 onwards, when a model cache is to be returned, `generate` will return a `Cache` instance instead by default (as opposed to the legacy tuple of tuples format). If you want to keep returning the legacy format, please set `return_legacy_cache=True`.
+[Step   0] loss=0.0100 raw_kl=0.0464 mean_abs_adv=0.7161 rollout_ent=0.068 domain=gsm8k
+[Step   5] loss=0.0075 raw_kl=0.0421 mean_abs_adv=0.7169 rollout_ent=0.060 domain=gsm8k
+[Step  10] loss=0.0345 raw_kl=0.0889 mean_abs_adv=0.7691 rollout_ent=0.195 domain=strategyqa
+[Step  15] loss=0.0323 raw_kl=0.0823 mean_abs_adv=0.7425 rollout_ent=0.205 domain=strategyqa
+[Step  20] loss=0.0204 raw_kl=0.0596 mean_abs_adv=0.8597 rollout_ent=0.100 domain=gsm8k
+[Step 21] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 22] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 23] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 24] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 25] ALERTS: ['ENTROPY_COLLAPSE']
+[Step  25] loss=0.0263 raw_kl=0.0908 mean_abs_adv=0.7722 rollout_ent=0.193 domain=strategyqa
+[Step 26] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 27] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 28] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 29] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 30] ALERTS: ['ENTROPY_COLLAPSE']
+[Step  30] loss=0.0214 raw_kl=0.0517 mean_abs_adv=0.7495 rollout_ent=0.095 domain=gsm8k
+[Step 31] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 32] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 33] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 34] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 35] ALERTS: ['ENTROPY_COLLAPSE']
+[Step  35] loss=0.0348 raw_kl=0.0803 mean_abs_adv=0.8026 rollout_ent=0.197 domain=strategyqa
+[Step 36] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 37] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 38] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 39] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 40] ALERTS: ['ENTROPY_COLLAPSE']
+[Step  40] loss=0.0097 raw_kl=0.0446 mean_abs_adv=0.7129 rollout_ent=0.071 domain=gsm8k
+[Step 41] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 42] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 43] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 44] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 45] ALERTS: ['ENTROPY_COLLAPSE']
+[Step  45] loss=0.0413 raw_kl=0.0927 mean_abs_adv=0.8487 rollout_ent=0.203 domain=strategyqa
+[Step 46] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 47] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 48] ALERTS: ['ENTROPY_COLLAPSE']
+[Step 49] ALERTS: ['ENTROPY_COLLAPSE']
+
+✓ Smoke test completed (50 steps)

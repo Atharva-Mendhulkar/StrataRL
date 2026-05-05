@@ -20,16 +20,14 @@ class UCBCurriculumScheduler:
         """Sample a domain using UCB."""
         ucb_values = {}
         for d in self.domains:
-            # Exploitation: Mean advantage
             exploitation = self.scores[d]
-            # Exploration: UCB term
             exploration  = self.c * np.sqrt(np.log(self.total_steps) / self.counts[d])
             
             combined = exploitation + exploration
             
-            # ── Refined Curriculum Stability Guard ────────────────────────────
-            # Logarithmic exploration floor prevents early domain starvation 
-            # and keeps exploration alive longer.
+            # ── Adaptive Exploration Floor ────────────────────────────────────
+            # Keeps exploration alive longer as training progresses to avoid early 
+            # domain starvation or random oscillations.
             floor = 0.05 * (1 + 0.1 * np.log(self.total_steps + 1))
             ucb_values[d] = max(combined, floor)
 
