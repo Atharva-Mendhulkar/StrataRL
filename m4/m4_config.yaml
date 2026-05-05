@@ -1,0 +1,34 @@
+model_id:       "Qwen/Qwen2.5-0.5B-Instruct"
+device:         "mps"
+dtype:          "bfloat16"
+
+# Training
+num_steps:      50
+G:              4
+batch_size:     2
+
+# LoRA (PEFT, not Unsloth)
+lora_r:         8
+lora_alpha:     16
+target_modules: ["q_proj", "v_proj"]
+
+# GRPO
+beta:           0.01
+clip_eps:       0.2
+lr:             1e-5
+max_new_tokens: 200
+min_new_tokens: 20
+temperature:    0.9
+
+# Rewards
+w_outcome:      0.7
+w_struct:       0.3
+
+# Domains (reduced for speed)
+domains:        ["gsm8k", "strategyqa"]
+samples_per_domain: 20
+
+# Monitoring
+log_every:      5
+eval_every:     25
+wandb_project:  "stratarl_m4_smoke"

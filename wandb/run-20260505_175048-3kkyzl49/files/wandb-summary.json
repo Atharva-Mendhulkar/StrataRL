@@ -1,0 +1,1 @@
+{"curriculum/strategyqa/mean_adv":0,"_runtime":2547.568032125,"_timestamp":1.7779861974228559e+09,"step":49,"learning/struct_reward":0,"train/policy_loss":0,"train/kl":0.04132252559065819,"learning/outcome_reward":0,"curriculum/gsm8k/mean_adv":0,"train/entropy":0.07062499970197678,"_step":49,"_wandb":{"runtime":2547},"train/loss":0.00041322523611597717}

@@ -1,0 +1,17 @@
+{"time":"2026-05-05T17:49:26.213444+05:30","level":"INFO","msg":"wandb-core"}
+{"time":"2026-05-05T17:49:26.213855+05:30","level":"INFO","msg":"stream: starting","core version":"0.26.1"}
+{"time":"2026-05-05T17:49:27.302418+05:30","level":"INFO","msg":"stream: created new stream","id":"2bmyuycs"}
+{"time":"2026-05-05T17:49:27.302479+05:30","level":"INFO","msg":"handler: started"}
+{"time":"2026-05-05T17:49:27.30265+05:30","level":"INFO","msg":"stream: started"}
+{"time":"2026-05-05T17:49:27.302658+05:30","level":"INFO","msg":"writer: started","stream_id":"2bmyuycs"}
+{"time":"2026-05-05T17:49:27.302701+05:30","level":"INFO","msg":"sender: started"}
+{"time":"2026-05-05T17:49:27.951842+05:30","level":"INFO","msg":"filestream: sending request","total_files":1,"console_offset":0,"console_lines":1}
+{"time":"2026-05-05T17:49:28.468368+05:30","level":"INFO","msg":"filestream: request sent","status":"200 OK"}
+{"time":"2026-05-05T17:49:42.953051+05:30","level":"INFO","msg":"filestream: sending request","total_files":2,"events_offset":0,"events_lines":2,"console_offset":0,"console_lines":2,"uploaded_len":2}
+{"time":"2026-05-05T17:49:43.363056+05:30","level":"INFO","msg":"filestream: request sent","status":"200 OK"}
+{"time":"2026-05-05T17:49:57.952588+05:30","level":"INFO","msg":"filestream: sending request","total_files":1,"events_offset":2,"events_lines":2}
+{"time":"2026-05-05T17:49:58.378347+05:30","level":"INFO","msg":"filestream: request sent","status":"200 OK"}
+{"time":"2026-05-05T17:50:12.953004+05:30","level":"INFO","msg":"filestream: sending request","total_files":2,"events_offset":4,"events_lines":2,"console_offset":2,"console_lines":1}
+{"time":"2026-05-05T17:50:13.487506+05:30","level":"INFO","msg":"filestream: request sent","status":"200 OK"}
+{"time":"2026-05-05T17:50:27.953781+05:30","level":"INFO","msg":"filestream: sending request","total_files":1,"events_offset":6,"events_lines":2}
+{"time":"2026-05-05T17:50:28.440103+05:30","level":"INFO","msg":"filestream: request sent","status":"200 OK"}

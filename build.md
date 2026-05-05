@@ -41,7 +41,7 @@ All bugs found on M4 will be present on Kaggle. All fixes apply directly.
 
 ## ENVIRONMENT SETUP
 
-### [ ] Step 0.1 — Create isolated environment
+### [x] Step 0.1 — Create isolated environment
 
 ```bash
 cd ~/projects
@@ -54,7 +54,7 @@ source .venv/bin/activate
 python --version
 ```
 
-### [ ] Step 0.2 — Install dependencies (M4-specific, no CUDA packages)
+### [x] Step 0.2 — Install dependencies (M4-specific, no CUDA packages)
 
 ```bash
 # Core ML stack — MPS-compatible versions
@@ -82,7 +82,7 @@ pip install pytest pytest-cov
 # unsloth — requires CUDA + triton
 ```
 
-### [ ] Step 0.3 — Verify MPS device is available
+### [x] Step 0.3 — Verify MPS device is available
 
 ```python
 # run: python -c "import torch; print(torch.backends.mps.is_available())"
@@ -90,7 +90,7 @@ pip install pytest pytest-cov
 # If False: reinstall torch with: pip install --upgrade torch
 ```
 
-### [ ] Step 0.4 — Download test model
+### [x] Step 0.4 — Download test model
 
 ```python
 # Run this once — downloads ~1GB to ~/.cache/huggingface
@@ -103,7 +103,7 @@ print(f"Parameters: {sum(p.numel() for p in model.parameters())/1e6:.1f}M")
 # Expected: ~494M parameters
 ```
 
-### [ ] Step 0.5 — Verify W&B (optional for M4 testing, recommended)
+### [x] Step 0.5 — Verify W&B (optional for M4 testing, recommended)
 
 ```bash
 wandb login
@@ -171,7 +171,7 @@ Do NOT integrate until each component passes its unit tests.
 
 **File:** `rewards/structural_reward.py`
 
-#### [ ] 1.1 — Implement domain templates
+#### [x] 1.1 — Implement domain templates
 
 ```python
 # rewards/structural_reward.py
@@ -275,7 +275,7 @@ def structural_reward(completion: str, domain: str = "default") -> float:
     return 1.0
 ```
 
-#### [ ] 1.2 — Implement token repetition penalty
+#### [x] 1.2 — Implement token repetition penalty
 
 ```python
 # rewards/token_repetition.py
@@ -299,7 +299,7 @@ def token_repetition_penalty(
     return 0.0 if max(Counter(ngrams).values()) > max_reps else 1.0
 ```
 
-#### [ ] 1.3 — Implement outcome verifiers
+#### [x] 1.3 — Implement outcome verifiers
 
 ```python
 # rewards/outcome_verifiers.py
@@ -359,7 +359,7 @@ DOMAIN_VERIFIERS = {
 }
 ```
 
-#### [ ] 1.4 — Implement GDPO reward aggregation
+#### [x] 1.4 — Implement GDPO reward aggregation
 
 ```python
 # rewards/reward_engine.py
@@ -421,7 +421,7 @@ def score_batch(
     return gdpo_rewards, raw_rewards
 ```
 
-#### [ ] 1.5 — Write and run reward engine tests
+#### [x] 1.5 — Write and run reward engine tests
 
 ```python
 # tests/test_reward_engine.py
@@ -625,7 +625,7 @@ pytest tests/test_reward_engine.py -v
 
 **File:** `training/advantage.py`
 
-#### [ ] 2.1 — Implement SAN
+#### [x] 2.1 — Implement SAN
 
 ```python
 # training/advantage.py
@@ -699,7 +699,7 @@ def expand_advantages_to_tokens(
     return torch.tensor(token_advantages, dtype=torch.float32)
 ```
 
-#### [ ] 2.2 — Write and run SAN tests
+#### [x] 2.2 — Write and run SAN tests
 
 ```python
 # tests/test_san_advantage.py
@@ -834,7 +834,7 @@ pytest tests/test_san_advantage.py -v
 
 **File:** `training/policy_update.py`
 
-#### [ ] 3.1 — Implement GRPO loss with correct KL formula
+#### [x] 3.1 — Implement GRPO loss with correct KL formula
 
 ```python
 # training/policy_update.py
@@ -932,7 +932,7 @@ def grpo_loss(
     }
 ```
 
-#### [ ] 3.2 — Write and run KL tests
+#### [x] 3.2 — Write and run KL tests
 
 ```python
 # tests/test_kl_computation.py
@@ -1022,7 +1022,7 @@ pytest tests/test_kl_computation.py -v
 
 **File:** `m4/m4_rollout_engine.py`
 
-#### [ ] 4.1 — Implement HF generate() rollout with logprob extraction
+#### [x] 4.1 — Implement HF generate() rollout with logprob extraction
 
 ```python
 # m4/m4_rollout_engine.py
@@ -1147,7 +1147,7 @@ def build_m4_engine(model_id: str = "Qwen/Qwen2.5-0.5B-Instruct") -> M4RolloutEn
     return M4RolloutEngine(model, tokenizer, device=device)
 ```
 
-#### [ ] 4.2 — Test logprob extraction correctness
+#### [x] 4.2 — Test logprob extraction correctness
 
 ```python
 # tests/test_alignment.py
@@ -1229,7 +1229,7 @@ pytest tests/test_alignment.py -v
 
 ### COMPONENT 5: UCB Curriculum Scheduler
 
-#### [ ] 5.1 — Implement UCB scheduler
+#### [x] 5.1 — Implement UCB scheduler
 
 ```python
 # curriculum/ucb_scheduler.py
@@ -1331,7 +1331,7 @@ class UCBCurriculumScheduler:
         return np.random.choice(domains, p=probs)
 ```
 
-#### [ ] 5.2 — Write and run scheduler tests
+#### [x] 5.2 — Write and run scheduler tests
 
 ```python
 # tests/test_ucb_scheduler.py
