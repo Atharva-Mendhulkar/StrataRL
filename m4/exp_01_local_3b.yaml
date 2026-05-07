@@ -1,0 +1,34 @@
+model_id:       "Qwen/Qwen2.5-3B-Instruct"
+device:         "mps"
+dtype:          "bfloat16"
+
+# Training
+num_steps:      10
+G:              4
+batch_size:     1
+
+# LoRA
+lora_r:         8
+lora_alpha:     16
+target_modules: ["q_proj", "v_proj"]
+
+# GRPO
+beta:           0.015
+clip_eps:       0.15
+lr:             1e-5
+max_new_tokens: 128
+min_new_tokens: 30
+temperature:    0.85
+
+# Rewards
+w_outcome:      0.70
+w_struct:       0.30
+
+# Domains
+domains:        ["gsm8k", "mmlu", "strategyqa"]
+samples_per_domain: 50
+
+# Monitoring
+log_every:      1
+eval_interval:  10
+wandb_project:  "stratarl_local_3b_verify"

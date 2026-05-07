@@ -33,6 +33,13 @@ def load_domain_samples(domain: str, n: int = 100):
         except Exception:
             samples = GSM8K_MANUAL
             
+    elif domain == "mmlu":
+        samples = [
+            {"prompt": "Which of the following is a prime number? (A) 4 (B) 9 (C) 11 (D) 15", "ground_truth": "C"},
+            {"prompt": "What is the capital of France? (A) London (B) Paris (C) Berlin (D) Rome", "ground_truth": "B"},
+            {"prompt": "Who wrote 'Romeo and Juliet'? (A) Shakespeare (B) Dickens (C) Austen (D) Twain", "ground_truth": "A"},
+            {"prompt": "Which element has atomic number 1? (A) Helium (B) Hydrogen (C) Oxygen (D) Carbon", "ground_truth": "B"},
+        ]
     elif domain == "strategyqa":
         samples = [
             {"prompt": "Would a Venus flytrap survive in the Arctic?", "ground_truth": "no"},

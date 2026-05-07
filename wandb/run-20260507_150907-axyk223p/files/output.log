@@ -1,0 +1,13 @@
+The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+From v4.47 onwards, when a model cache is to be returned, `generate` will return a `Cache` instance instead by default (as opposed to the legacy tuple of tuples format). If you want to keep returning the legacy format, please set `return_legacy_cache=True`.
+Traceback (most recent call last):
+  File "/Users/atharvamendhulkar/Desktop/RLverify/m4/m4_train.py", line 188, in <module>
+    run_smoke_test()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/atharvamendhulkar/Desktop/RLverify/m4/m4_train.py", line 103, in run_smoke_test
+    assert_batch_domain_homogeneity(domains)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/atharvamendhulkar/Desktop/RLverify/training/domain_guard.py", line 11, in assert_batch_domain_homogeneity
+    assert len(unique) == 1, (
+           ^^^^^^^^^^^^^^^^
+AssertionError: DOMAIN HETEROGENEITY: batch contains 0 domains: set(). UCB scheduler must sample one domain per step, then fill the batch from it.

@@ -1,0 +1,21 @@
+2026-05-07 13:36:40,622 INFO    MainThread:55282 [wandb_setup.py:_flush():81] Current SDK version is 0.26.1
+2026-05-07 13:36:40,623 INFO    MainThread:55282 [wandb_setup.py:_flush():81] Configure stats pid to 55282
+2026-05-07 13:36:40,623 INFO    MainThread:55282 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-05-07 13:36:40,623 INFO    MainThread:55282 [wandb_init.py:setup_run_log_directory():723] Logging user logs to /Users/atharvamendhulkar/Desktop/RLverify/wandb/offline-run-20260507_133640-tc1hxvz5/logs/debug.log
+2026-05-07 13:36:40,623 INFO    MainThread:55282 [wandb_init.py:setup_run_log_directory():724] Logging internal logs to /Users/atharvamendhulkar/Desktop/RLverify/wandb/offline-run-20260507_133640-tc1hxvz5/logs/debug-internal.log
+2026-05-07 13:36:40,623 INFO    MainThread:55282 [wandb_init.py:init():850] calling init triggers
+2026-05-07 13:36:40,623 INFO    MainThread:55282 [wandb_init.py:init():855] wandb.init called with sweep_config: {}
+config: {'model_id': 'Qwen/Qwen2.5-0.5B-Instruct', 'device': 'mps', 'dtype': 'bfloat16', 'num_steps': 2, 'G': 4, 'batch_size': 2, 'lora_r': 8, 'lora_alpha': 16, 'target_modules': ['q_proj', 'v_proj'], 'beta': 0.015, 'clip_eps': 0.15, 'lr': '1e-5', 'max_new_tokens': 256, 'min_new_tokens': 30, 'temperature': 0.85, 'w_outcome': 0.65, 'w_struct': 0.35, 'domains': ['gsm8k', 'strategyqa'], 'samples_per_domain': 20, 'log_every': 5, 'eval_every': 25, 'wandb_project': 'stratarl_m4_smoke', '_wandb': {}}
+2026-05-07 13:36:40,623 INFO    MainThread:55282 [wandb_init.py:init():898] starting backend
+2026-05-07 13:36:40,853 INFO    MainThread:55282 [wandb_init.py:init():913] sending inform_init request
+2026-05-07 13:36:40,987 INFO    MainThread:55282 [wandb_init.py:init():918] backend started and connected
+2026-05-07 13:36:40,989 INFO    MainThread:55282 [wandb_init.py:init():988] updated telemetry
+2026-05-07 13:36:41,001 INFO    MainThread:55282 [wandb_init.py:init():1011] communicating run to backend with 90.0 second timeout
+2026-05-07 13:36:41,003 INFO    MainThread:55282 [wandb_init.py:init():1056] starting run threads in backend
+2026-05-07 13:36:41,037 INFO    MainThread:55282 [wandb_run.py:_console_start():2554] atexit reg
+2026-05-07 13:36:41,037 INFO    MainThread:55282 [wandb_run.py:_redirect():2403] redirect: wrap_raw
+2026-05-07 13:36:41,037 INFO    MainThread:55282 [wandb_run.py:_redirect():2472] Wrapping output streams.
+2026-05-07 13:36:41,037 INFO    MainThread:55282 [wandb_run.py:_redirect():2495] Redirects installed.
+2026-05-07 13:36:41,039 INFO    MainThread:55282 [wandb_init.py:init():1094] run started, returning control to user process
+2026-05-07 13:38:16,777 INFO    wandb-AsyncioManager-main:55282 [service_client.py:_forward_responses():134] Reached EOF.
+2026-05-07 13:38:16,778 INFO    wandb-AsyncioManager-main:55282 [mailbox.py:close():155] Closing mailbox, abandoning 0 handles.

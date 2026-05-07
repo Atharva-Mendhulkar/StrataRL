@@ -1,0 +1,16 @@
+The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+From v4.47 onwards, when a model cache is to be returned, `generate` will return a `Cache` instance instead by default (as opposed to the legacy tuple of tuples format). If you want to keep returning the legacy format, please set `return_legacy_cache=True`.
+Traceback (most recent call last):
+  File "/Users/atharvamendhulkar/Desktop/RLverify/m4/m4_train.py", line 186, in <module>
+    run_smoke_test()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/atharvamendhulkar/Desktop/RLverify/m4/m4_train.py", line 127, in run_smoke_test
+    losses = grpo_loss(
+        model, input_ids, attention_mask, completion_mask,
+        token_adv_tensor, old_logprobs,
+        beta=cfg["beta"], clip_eps=cfg["clip_eps"]
+    )
+  File "/Users/atharvamendhulkar/Desktop/RLverify/training/policy_update.py", line 31, in grpo_loss
+    assert prompt_logp_contamination < 1e-3, (
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PROMPT-REGION CONTAMINATION: old_logprobs has non-zero values in prompt positions (sum=260.777344). Check packing logic in utils/tokenize.py.

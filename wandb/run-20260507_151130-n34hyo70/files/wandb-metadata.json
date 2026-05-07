@@ -1,0 +1,42 @@
+{
+  "os":  "macOS-26.4.1-arm64-arm-64bit-Mach-O",
+  "python":  "CPython 3.14.2",
+  "startedAt":  "2026-05-07T09:41:30.934350Z",
+  "args":  [
+    "--config",
+    "m4/m4_config.yaml"
+  ],
+  "program":  "/Users/atharvamendhulkar/Desktop/RLverify/m4/m4_train.py",
+  "codePath":  "m4/m4_train.py",
+  "codePathLocal":  "m4/m4_train.py",
+  "git":  {
+    "remote":  "https://github.com/Atharva-Mendhulkar/RLverify.git",
+    "commit":  "f74159a1ee7f9e947a84a1374a9ed272fabac25f"
+  },
+  "email":  "atharvamendhulkar01@gmail.com",
+  "root":  "/Users/atharvamendhulkar/Desktop/RLverify",
+  "host":  "Atharvas-Macbook-Air-151.local",
+  "executable":  "/Users/atharvamendhulkar/Desktop/RLverify/.venv/bin/python",
+  "cpu_count":  10,
+  "cpu_count_logical":  10,
+  "disk":  {
+    "/":  {
+      "total":  "494384795648",
+      "used":  "420010094592"
+    }
+  },
+  "memory":  {
+    "total":  "25769803776"
+  },
+  "apple":  {
+    "name":  "Apple M4",
+    "ecpuCores":  6,
+    "pcpuCores":  4,
+    "gpuCores":  10,
+    "memoryGb":  24,
+    "swapTotalBytes":  "6442450944",
+    "ramTotalBytes":  "25769803776",
+    "macModel":  "Mac16,12"
+  },
+  "writerId":  "n0etphdu6ht304wplraybpw01i7phbsu"
+}

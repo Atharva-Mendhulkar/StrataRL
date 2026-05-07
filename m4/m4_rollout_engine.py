@@ -114,16 +114,66 @@ class M4RolloutEngine:
                     all_logprobs.append([0.0] * min_new_tokens)
                     finish_reasons.append("fallback")
 
+            # I-8: Compute prompt logprobs for invariant verification
+            with torch.no_grad():
+                prompt_out = self.model(prompt_ids)
+                prompt_logits = prompt_out.logits[:, :-1, :]
+                prompt_lp_all = F.log_softmax(prompt_logits, dim=-1)
+                # Aligned: prompt_lp_all[0, t] is logp of prompt_ids[0, t+1]
+                prompt_labels = prompt_ids[:, 1:]
+                prompt_token_lp = prompt_lp_all.gather(2, prompt_labels.unsqueeze(-1)).squeeze(-1)
+                prompt_logprobs = [0.0] + prompt_token_lp[0].tolist() # [0] for first token (no parent)
+
             rollouts.append({
                 "prompt":           prompt,
                 "completions":      completions,
                 "token_ids":        all_token_ids,
                 "rollout_logprobs": all_logprobs,
+                "prompt_logprobs":  prompt_logprobs,
                 "finish_reasons":   finish_reasons,
+                "completion_start_idx": prompt_len, 
+                "completion_end_idxs":  [prompt_len + len(ids) for ids in all_token_ids] 
             })
 
         self.model.train()
         return rollouts
+
+    @torch.no_grad()
+    def generate_for_eval(
+        self,
+        prompts:        List[str],
+        temperature:    float = 0.0,
+        max_tokens:     int   = 512,
+        n:              int   = 1,
+    ) -> List[str]:
+        """
+        Greedy or sampled generation for evaluation. Returns flat list of completions.
+        """
+        self.model.eval()
+        completions = []
+        
+        for prompt in prompts:
+            prompt_ids = self.tokenizer(
+                prompt, return_tensors="pt", add_special_tokens=True
+            ).input_ids.to(self.device)
+            
+            outputs = self.model.generate(
+                prompt_ids,
+                max_new_tokens = max_tokens,
+                do_sample      = (temperature > 0),
+                temperature    = temperature,
+                num_return_sequences = n,
+                pad_token_id   = self.tokenizer.eos_token_id,
+                eos_token_id   = self.tokenizer.eos_token_id,
+            )
+            
+            for output in outputs:
+                comp_ids = output[prompt_ids.shape[1]:]
+                text = self.tokenizer.decode(comp_ids, skip_special_tokens=True)
+                completions.append(text)
+        
+        self.model.train()
+        return completions
 
 
 def build_m4_engine(model_id: str = "Qwen/Qwen2.5-0.5B-Instruct") -> M4RolloutEngine:

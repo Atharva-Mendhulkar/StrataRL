@@ -36,35 +36,35 @@ class TestStructuralReward:
 <answer>no</answer>"""
         assert structural_reward(completion, domain="strategyqa") == 1.0
 
-    # ── Exploit tests — these MUST return 0.0 ──────────────────────────────
+    # ── Exploit tests — These now return partial credit (graded rewards) ──────
 
     def test_blocks_empty_think(self):
-        """Reward hacking: <think></think> should fail min-length gate."""
+        """Reward hacking: <think></think> should fail min-length gate but gets some credit for tags."""
         completion = "<think></think><answer>42</answer>"
-        assert structural_reward(completion, domain="gsm8k") == 0.0
+        assert structural_reward(completion, domain="gsm8k") == 0.35
 
     def test_blocks_missing_think(self):
         completion = "<answer>42</answer>"
-        assert structural_reward(completion, domain="gsm8k") == 0.0
+        assert structural_reward(completion, domain="gsm8k") == 0.25
 
     def test_blocks_missing_answer(self):
         completion = "<think>Some reasoning here that is long enough to pass gates.</think>"
-        assert structural_reward(completion, domain="gsm8k") == 0.0
+        assert structural_reward(completion, domain="gsm8k") == 0.175
 
     def test_blocks_wrong_order(self):
         """answer before think must fail."""
         completion = "<answer>42</answer><think>I thought about it after answering.</think>"
-        assert structural_reward(completion, domain="gsm8k") == 0.0
+        assert structural_reward(completion, domain="gsm8k") == 0.3
 
     def test_blocks_garbage_repetition(self):
         """Character repetition garbage must fail."""
         completion = "<think>" + "a" * 200 + "</think><answer>42</answer>"
-        assert structural_reward(completion, domain="gsm8k") == 0.0
+        assert structural_reward(completion, domain="gsm8k") == 0.45
 
     def test_blocks_word_repetition(self):
         """Word-level n-gram repetition must fail."""
         completion = "<think>" + "the answer is correct " * 30 + "</think><answer>42</answer>"
-        assert structural_reward(completion, domain="gsm8k") == 0.0
+        assert structural_reward(completion, domain="gsm8k") == 0.45
 
     def test_blocks_missing_domain_tags_gsm8k(self):
         """GSM8K requires <decompose>, <compute>, <verify> — missing any should fail."""
@@ -73,7 +73,7 @@ Janet earns $17/day. Over 5 days that is 85 dollars total.
 This is a straightforward multiplication problem and the answer is 85.
 </think>
 <answer>85</answer>"""
-        assert structural_reward(completion, domain="gsm8k") == 0.0
+        assert structural_reward(completion, domain="gsm8k") == 0.5
 
     def test_blocks_missing_domain_tags_strategyqa(self):
         """StrategyQA requires <decompose>, <resolve>, <synthesize>."""
@@ -83,12 +83,12 @@ Sharks live in water. Chihuahuas live on land.
 </think>
 <answer>no</answer>"""
         # Missing <resolve> and <synthesize>
-        assert structural_reward(completion, domain="strategyqa") == 0.0
+        assert structural_reward(completion, domain="strategyqa") == 0.5
 
     def test_think_too_short_for_gsm8k(self):
         """< 80 chars in <think> for gsm8k must fail."""
         completion = "<think>\n<decompose>x</decompose><compute>y</compute><verify>z</verify>\n</think><answer>42</answer>"
-        assert structural_reward(completion, domain="gsm8k") == 0.0
+        assert structural_reward(completion, domain="gsm8k") == 0.8
 
 
 # ── Outcome verifier tests ────────────────────────────────────────────────────

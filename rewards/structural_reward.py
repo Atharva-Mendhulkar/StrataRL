@@ -43,73 +43,70 @@ def compute_repetition_score(text: str, n: int = 5) -> int:
     return max(Counter(ngrams).values()) if ngrams else 0
 
 
+# ── Graded Reward Configuration ─────────────────────────────────────────────
+
+STRUCTURAL_WEIGHTS = {
+    "think_present":   0.25,   # <think> tag exists
+    "answer_present":  0.25,   # <answer> tag exists
+    "correct_order":   0.20,   # think precedes answer
+    "min_length":      0.20,   # domain-appropriate minimum length satisfied
+    "no_garbage":      0.10,   # passes repetition/garbage gates
+}
+
 def structural_reward(completion: str, domain: str = "default", phase: str = "strict") -> float:
     """
-    Returns a semi-dense continuous score in [0, 1.0].
-    
-    Components (0.2 each):
-      1. Tag presence: Both <think> and <answer> exist
-      2. Content: <answer> is non-empty
-      3. Length: <think> meets minimum threshold
-      4. Quality: No garbage patterns
-      5. Repetition: Word-level repetition is within limits
+    Graded structural reward: partial credit per verified component.
+    Returns float in [0.1].
     """
     score = 0.0
     
-    think_m  = THINK_PATTERN.search(completion)
-    answer_m = ANSWER_PATTERN.search(completion)
-
-    # 1. Tag Presence & Order (0.2)
-    if think_m and answer_m:
-        score += 0.2
+    think_match  = THINK_PATTERN.search(completion)
+    answer_match = ANSWER_PATTERN.search(completion)
     
-    think   = think_m.group(1).strip() if think_m else ""
-    answer  = answer_m.group(1).strip() if answer_m else ""
-    words   = think.lower().split()
-
-    # 2. Answer Content (0.2)
-    if answer:
-        score += 0.2
-
-    # 3. Length (0.2)
-    min_chars = max(
-        UNIVERSAL_MIN_THINK_CHARS,
-        DOMAIN_MIN_THINK_CHARS.get(domain, DOMAIN_MIN_THINK_CHARS["default"])
-    )
-    if phase == "bootstrap":
-        min_chars = int(min_chars * 0.6)
+    # Component 1: think tag present
+    if think_match:
+        score += STRUCTURAL_WEIGHTS["think_present"]
     
-    if len(think) >= min_chars:
-        score += 0.2
-
-    # 4. Quality: No Garbage (0.2)
-    garbage_found = False
-    for pattern in GARBAGE_PATTERNS:
-        if pattern.search(think):
-            garbage_found = True
-            break
-    if not garbage_found and think:
-        score += 0.2
-
-    # 5. Repetition: Within Limits (0.2)
-    if think and compute_repetition_score(think, n=5) <= MAX_NGRAM_REPEAT:
-        score += 0.2
-
+    # Component 2: answer tag present
+    if answer_match:
+        score += STRUCTURAL_WEIGHTS["answer_present"]
+    
+    # Component 3: correct ordering (only testable if both present)
+    if think_match and answer_match:
+        if think_match.end() <= answer_match.start():
+            score += STRUCTURAL_WEIGHTS["correct_order"]
+    
+    # Component 4: minimum think length (domain-aware)
+    if think_match:
+        think_content = think_match.group(1).strip()
+        domain_min = DOMAIN_MIN_THINK_CHARS.get(
+            domain, DOMAIN_MIN_THINK_CHARS["default"]
+        )
+        effective_min = max(UNIVERSAL_MIN_THINK_CHARS, domain_min)
+        if phase == "bootstrap":
+            effective_min = int(effective_min * 0.6)
+            
+        if len(think_content) >= effective_min:
+            score += STRUCTURAL_WEIGHTS["min_length"]
+    
+    # Component 5: no garbage (only test if think block exists and has content)
+    if think_match:
+        think_content = think_match.group(1).strip()
+        has_garbage = any(p.search(think_content) for p in GARBAGE_PATTERNS)
+        rep_score   = compute_repetition_score(think_content, n=5)
+        if not has_garbage and rep_score <= MAX_NGRAM_REPEAT:
+            score += STRUCTURAL_WEIGHTS["no_garbage"]
+    
     # Domain templates gating (multiplicative)
     required_tags = DOMAIN_TEMPLATES.get(domain, [])
-    if required_tags:
+    if required_tags and think_match:
+        think_content = think_match.group(1)
         found_tags = 0
         for tag in required_tags:
-            if f"<{tag}>" in think and f"</{tag}>" in think:
+            if f"<{tag}>" in think_content and f"</{tag}>" in think_content:
                 found_tags += 1
         
         if found_tags < len(required_tags):
-            # Apply multiplicative penalty for missing reasoning steps
             score *= 0.5
 
-    # Deterministic Diversity Bonus (max 0.01)
-    if words:
-        diversity = len(set(words)) / len(words)
-        score += 0.01 * diversity
-
-    return min(1.0, score)
+    return round(score, 4)
