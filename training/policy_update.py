@@ -67,8 +67,9 @@ def grpo_loss(
     raw_kl_per_token = torch.exp(old_logp_aligned) * (old_logp_aligned - policy_logp)
 
     # I-9: Track raw KL for absolute drift monitoring (separate from normalized)
-    kl_scale  = raw_kl_per_token.abs().mean().detach() + 1e-8
-    kl_norm   = raw_kl_per_token / kl_scale
+    # Scale is calculated ONLY over completion tokens to avoid dilution
+    kl_scale  = (raw_kl_per_token.abs() * comp_mask).sum().detach() / (comp_mask.sum() + 1e-8)
+    kl_norm   = raw_kl_per_token / (kl_scale + 1e-8)
 
     # Entropy
     entropy = -(torch.exp(policy_logp) * policy_logp * comp_mask).sum() / (comp_mask.sum() + 1e-8)
