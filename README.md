@@ -43,61 +43,149 @@ The root cause is **cross-stratum bias**: global advantage normalization compare
 
 ### Pipeline Overview
 
-```
-flowchart TD
-    A[UCB Curriculum Sampler]
+```mermaid
+flowchart TB
 
-    A -->|one domain per step| B
+    %% =========================
+    %% Curriculum
+    %% =========================
 
-    subgraph PIPELINE [Training Pipeline]
+    A["<br><b>UCB Curriculum Sampler</b><br><br>
+    Adaptive domain scheduling<br>
+    one domain per rollout step"]
 
-        B[Rollout Engine<br/><br/>
-        HF generate() [M4] / vLLM [Kaggle]<br/>
-        G=4 [M4] / G=8 [Kaggle]<br/>
-        captures per-token logprobs at generation time<br/>
-        (π_old = π_ref)]
+    %% =========================
+    %% Rollout
+    %% =========================
 
-        B --> C
+    B["<br><b>Rollout Engine</b><br><br>
 
-        C[Reward Engine<br/><br/>
-        R_outcome → domain verifier<br/>
-        (SymPy / letter match / yes-no)<br/><br/>
-        R_struct → domain template regex<br/>
-        (partial credit)<br/><br/>
-        R_token_rep → token n-gram gate<br/><br/>
-        clip to [-2.0, 2.0]<br/>
-        GDPO normalize (annealed ±0.02 → 0.004)]
+    <b>Backends</b><br>
+    • HF generate() on M4<br>
+    • vLLM on Kaggle<br><br>
 
-        C --> D
+    <b>Group Size</b><br>
+    • G=4 on M4<br>
+    • G=8 on Kaggle<br><br>
 
-        D[SAN Advantage Engine<br/><br/>
-        per-stratum Z-norm<br/>
-        (zero-var: center-only)<br/>
-        (low-var: dampen)<br/>
-        (normal: full Z-norm)<br/><br/>
-        clip ±5.0<br/>
-        length-norm clamped at 512 tokens]
+    <b>Captured Data</b><br>
+    • per-token logprobs<br>
+    • rollout traces<br><br>
 
-        D --> E
+    <b>Reference Policy</b><br>
+    π_old = π_ref"]
 
-        E[GRPO Loss (QLoRA, no ref_model)<br/><br/>
-        log_ratio clamped [-10, 10]<br/><br/>
-        KL = exp(old_logp) × (old_logp − policy_logp)<br/>
-        [correct sign]<br/><br/>
-        KL detach-normalized for stability<br/>
-        raw_kl logged separately for drift monitoring]
+    %% =========================
+    %% Reward
+    %% =========================
 
-        E --> F
+    C["<br><b>Reward Engine</b><br><br>
 
-        F[Monitor<br/><br/>
-        Δ_O/S tracker<br/>
-        prefix diversity<br/>
-        H_answer entropy<br/><br/>
-        recompute check every 25 steps<br/>
-        domain collapse detector]
-    end
+    <b>R_outcome</b><br>
+    • SymPy numeric verifier<br>
+    • letter match verifier<br>
+    • yes/no verifier<br><br>
 
-    style PIPELINE fill:#111111,stroke:#888,stroke-width:2px,color:#ffffff
+    <b>R_struct</b><br>
+    • domain regex templates<br>
+    • partial credit scoring<br><br>
+
+    <b>R_token_rep</b><br>
+    • token n-gram repetition gate<br><br>
+
+    <b>Normalization</b><br>
+    • clip rewards to [-2, 2]<br>
+    • GDPO normalization<br>
+    • annealed noise<br>
+      ±0.02 → ±0.004"]
+
+    %% =========================
+    %% SAN
+    %% =========================
+
+    D["<br><b>SAN Advantage Engine</b><br><br>
+
+    <b>Per-Stratum Z-Normalization</b><br><br>
+
+    <b>Zero Variance</b><br>
+    • center only<br><br>
+
+    <b>Low Variance</b><br>
+    • dampened scaling<br><br>
+
+    <b>Normal Variance</b><br>
+    • full Z-normalization<br><br>
+
+    <b>Safety Controls</b><br>
+    • advantage clip ±5.0<br>
+    • length norm clamp<br>
+      at 512 tokens"]
+
+    %% =========================
+    %% GRPO
+    %% =========================
+
+    E["<br><b>GRPO Loss</b><br><br>
+
+    <b>Training Mode</b><br>
+    • QLoRA<br>
+    • no frozen ref_model<br><br>
+
+    <b>Ratio Controls</b><br>
+    • log_ratio clamp [-10, 10]<br><br>
+
+    <b>KL Objective</b><br>
+    KL = exp(old_logp)<br>
+    × (old_logp − policy_logp)<br><br>
+
+    <b>Stability</b><br>
+    • detach-normalized KL<br>
+    • raw_kl logged separately"]
+
+    %% =========================
+    %% Monitor
+    %% =========================
+
+    F["<br><b>Monitoring</b><br><br>
+
+    <b>Tracking</b><br>
+    • Δ_O/S tracker<br>
+    • prefix diversity<br>
+    • H_answer entropy<br><br>
+
+    <b>Validation</b><br>
+    • recompute every 25 steps<br><br>
+
+    <b>Failure Detection</b><br>
+    • domain collapse detector"]
+
+    %% =========================
+    %% Flow
+    %% =========================
+
+    A -->|"sample next domain"| B
+    B -->|"generate rollouts"| C
+    C -->|"compute rewards"| D
+    D -->|"normalized advantages"| E
+    E -->|"training metrics"| F
+
+    %% =========================
+    %% Styles
+    %% =========================
+
+    classDef sampler fill:#1e293b,color:#ffffff,stroke:#94a3b8,stroke-width:2px
+    classDef rollout fill:#0f766e,color:#ffffff,stroke:#5eead4,stroke-width:2px
+    classDef reward fill:#7c2d12,color:#ffffff,stroke:#fdba74,stroke-width:2px
+    classDef san fill:#312e81,color:#ffffff,stroke:#a5b4fc,stroke-width:2px
+    classDef grpo fill:#581c87,color:#ffffff,stroke:#d8b4fe,stroke-width:2px
+    classDef monitor fill:#3f3f46,color:#ffffff,stroke:#d4d4d8,stroke-width:2px
+
+    class A sampler
+    class B rollout
+    class C reward
+    class D san
+    class E grpo
+    class F monitor
 ```
 
 ### Domain Templates
