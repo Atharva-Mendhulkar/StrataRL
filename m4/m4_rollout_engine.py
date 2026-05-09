@@ -226,28 +226,29 @@ class M4RolloutEngine:
         for prompt in prompts:
 
             inputs = self.tokenizer(
-                prompt,
-                return_tensors="pt",
-                add_special_tokens=True,
-                padding=True,
-                truncation=True,
-            )
+                prompt, return_tensors="pt", add_special_tokens=True
+            ).to(self.device)
+            prompt_ids = inputs.input_ids
+            attention_mask = inputs.attention_mask
 
-            prompt_ids = inputs.input_ids.to(self.device)
+            do_sample = temperature > 0
+            gen_kwargs = {
+                "max_new_tokens": max_tokens,
+                "do_sample": do_sample,
+                "pad_token_id": self.tokenizer.eos_token_id,
+                "eos_token_id": self.tokenizer.eos_token_id,
+                "attention_mask": attention_mask,
+            }
 
-            attention_mask = inputs.attention_mask.to(self.device)
-
-            outputs = self.model.generate(
-                input_ids=prompt_ids,
-                attention_mask=attention_mask,
-                max_new_tokens=max_tokens,
-                do_sample=(temperature > 0),
-                temperature=temperature,
-                num_return_sequences=n,
-                pad_token_id=self.tokenizer.eos_token_id,
-                eos_token_id=self.tokenizer.eos_token_id,
-                use_cache=True,
-            )
+            if do_sample:
+                gen_kwargs["temperature"] = temperature
+                gen_kwargs["num_return_sequences"] = n
+            else:
+                gen_kwargs["top_p"] = None
+                gen_kwargs["top_k"] = None
+                gen_kwargs["temperature"] = None
+            
+            outputs = self.model.generate(prompt_ids, **gen_kwargs)
 
             for output in outputs:
 

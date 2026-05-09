@@ -37,9 +37,11 @@ class KaggleRolloutEngine:
         eos_id   = self.tokenizer.eos_token_id
 
         for prompt in prompts:
-            prompt_ids = self.tokenizer(
+            inputs = self.tokenizer(
                 prompt, return_tensors="pt", add_special_tokens=True
-            ).input_ids.to(self.device)
+            ).to(self.device)
+            prompt_ids = inputs.input_ids
+            attention_mask = inputs.attention_mask
             prompt_len = prompt_ids.shape[1]
 
             completions    = []
@@ -55,6 +57,7 @@ class KaggleRolloutEngine:
                 attempts += 1
                 outputs = self.model.generate(
                     prompt_ids,
+                    attention_mask          = attention_mask,
                     max_new_tokens          = max_new_tokens,
                     min_new_tokens          = min_new_tokens,
                     do_sample               = True,
@@ -134,19 +137,30 @@ class KaggleRolloutEngine:
         completions = []
 
         for prompt in prompts:
-            prompt_ids = self.tokenizer(
+            inputs = self.tokenizer(
                 prompt, return_tensors="pt", add_special_tokens=True
-            ).input_ids.to(self.device)
+            ).to(self.device)
+            prompt_ids = inputs.input_ids
+            attention_mask = inputs.attention_mask
 
-            outputs = self.model.generate(
-                prompt_ids,
-                max_new_tokens       = max_tokens,
-                do_sample            = (temperature > 0),
-                temperature          = temperature if temperature > 0 else None,
-                num_return_sequences = n,
-                pad_token_id         = self.tokenizer.eos_token_id,
-                eos_token_id         = self.tokenizer.eos_token_id,
-            )
+            do_sample = temperature > 0
+            gen_kwargs = {
+                "max_new_tokens": max_tokens,
+                "do_sample": do_sample,
+                "pad_token_id": self.tokenizer.eos_token_id,
+                "eos_token_id": self.tokenizer.eos_token_id,
+                "attention_mask": attention_mask,
+            }
+
+            if do_sample:
+                gen_kwargs["temperature"] = temperature
+                gen_kwargs["num_return_sequences"] = n
+            else:
+                gen_kwargs["top_p"] = None
+                gen_kwargs["top_k"] = None
+                gen_kwargs["temperature"] = None
+
+            outputs = self.model.generate(prompt_ids, **gen_kwargs)
 
             for output in outputs:
                 comp_ids = output[prompt_ids.shape[1]:]
