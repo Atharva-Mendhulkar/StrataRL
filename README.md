@@ -362,14 +362,13 @@ import zipfile, os, sys
 with zipfile.ZipFile('/kaggle/input/stratarl-src/stratarl_src.zip', 'r') as z:
     z.extractall('/kaggle/working/')
 
-os.environ['PYTHONPATH'] = '/kaggle/working/stratarl'
-sys.path.insert(0, '/kaggle/working/stratarl')
+os.environ['PYTHONPATH'] = '/kaggle/working/RLverify-main'
+sys.path.insert(0, '/kaggle/working/RLverify-main')
 
-# Verify
+# Optional: verify
 import subprocess
-result = subprocess.run(['python', '-c', 'import rewards; print("✓ Import OK")'],
-                       capture_output=True, text=True,
-                       env={**os.environ, 'PYTHONPATH': '/kaggle/working/stratarl'})
+subprocess.run(['python', '-c', 'import m4.m4_rollout_engine; print("Import success")'],
+                       env={**os.environ, 'PYTHONPATH': '/kaggle/working/RLverify-main'})
 print(result.stdout)
 ```
 
@@ -408,11 +407,11 @@ import subprocess, os, sys
 token = UserSecretsClient().get_secret("GITHUB_TOKEN")
 repo_url = f"https://{token}@github.com/YOUR_USERNAME/stratarl.git"
 
-subprocess.run(['git', 'clone', '--depth', '1', repo_url, '/kaggle/working/stratarl'],
+subprocess.run(['git', 'clone', '--depth', '1', repo_url, '/kaggle/working/RLverify-main'],
                check=True)
 
-os.environ['PYTHONPATH'] = '/kaggle/working/stratarl'
-sys.path.insert(0, '/kaggle/working/stratarl')
+os.environ['PYTHONPATH'] = '/kaggle/working/RLverify-main'
+sys.path.insert(0, '/kaggle/working/RLverify-main')
 print("✓ Repo cloned")
 ```
 
@@ -428,7 +427,7 @@ patch_content = """
 # paste updated file content here
 """.strip()
 
-with open('/kaggle/working/stratarl/rewards/reward_engine.py', 'w') as f:
+with open('/kaggle/working/RLverify-main/rewards/reward_engine.py', 'w') as f:
     f.write(patch_content)
 print("✓ Patched reward_engine.py")
 ```
@@ -465,7 +464,7 @@ print("✓ W&B authenticated")
 
 ```python
 %%bash
-cd /kaggle/working/stratarl
+cd /kaggle/working/RLverify-main
 export PYTHONPATH=.
 
 python scripts/generate_kaggle_config.py
@@ -476,7 +475,7 @@ python scripts/audit_config.py --config configs/exp_01_kaggle.yaml
 
 ```python
 %%bash
-cd /kaggle/working/stratarl && export PYTHONPATH=.
+cd /kaggle/working/RLverify-main && export PYTHONPATH=.
 python scripts/measure_baseline.py \
   --model Qwen/Qwen2.5-3B-Instruct \
   --n_samples 20 \
@@ -488,7 +487,7 @@ cat reports/actual_baselines.json
 
 ```python
 %%bash
-cd /kaggle/working/stratarl && export PYTHONPATH=.
+cd /kaggle/working/RLverify-main && export PYTHONPATH=.
 python training/train.py \
   --config configs/exp_01_kaggle.yaml \
   --run_name EXP_01_qwen3b_1000steps \
@@ -501,7 +500,7 @@ python training/train.py \
 
 ```python
 %%bash
-cd /kaggle/working/stratarl && export PYTHONPATH=.
+cd /kaggle/working/RLverify-main && export PYTHONPATH=.
 python scripts/measure_baseline.py \
   --model ./outputs/final/ \
   --n_samples 20 \
@@ -662,6 +661,10 @@ stratarl/
 ├── README.md
 ├── CLAUDE.md                   ← agent runbook: patches, tests, migration
 ├── STRATARL.md                 ← full architecture documentation
+│
+├── engines/
+│   ├── kaggle_rollout_engine.py← Kaggle/CUDA BitsAndBytes engine
+│   └── kaggle_config.yaml      ← base Kaggle configuration
 │
 ├── m4/
 │   ├── m4_rollout_engine.py    ← HF generate() + MPS (M4 only)
