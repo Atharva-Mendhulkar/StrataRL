@@ -18,7 +18,7 @@ from collections import defaultdict
 from peft import get_peft_model, LoraConfig, TaskType
 from transformers import AutoTokenizer
 
-from kaggle.kaggle_rollout_engine    import build_kaggle_engine
+from engines.kaggle_rollout_engine    import build_kaggle_engine
 from rewards.reward_engine           import score_batch
 from training.advantage              import compute_san_advantages, expand_advantages_to_tokens
 from training.policy_update          import grpo_loss

@@ -15,7 +15,7 @@ def _build_engine(model_id: str, device: str):
     - cpu   → M4RolloutEngine with CPU fallback
     """
     if device == "cuda":
-        from kaggle.kaggle_rollout_engine import build_kaggle_engine
+        from engines.kaggle_rollout_engine import build_kaggle_engine
         print(f"Using KaggleRolloutEngine (4-bit BnB CUDA) for {model_id}")
         return build_kaggle_engine(model_id, load_in_4bit=True)
     else:
