@@ -1,11 +1,12 @@
 # scripts/generate_kaggle_config.py
 """
-Takes M4 validated config and produces Kaggle-ready config.
-Never hand-edit — always generate from M4 config to preserve inheritance.
+Generates the production Kaggle config (configs/exp_01_kaggle.yaml).
+Never hand-edit the output — always regenerate from this script.
 """
 
 import yaml
 from pathlib import Path
+
 
 def generate_kaggle_config(
     m4_config_path:     str = "m4/m4_config.yaml",
@@ -15,52 +16,66 @@ def generate_kaggle_config(
         base = yaml.safe_load(f)
 
     kaggle = {
-        # ── Model ──────────────────────────────────────────────────────────
-        "model_id":       "Qwen/Qwen2.5-3B-Instruct",
-        "device":         "cuda",
-        "dtype":          "bfloat16",
+        # Model
+        "model_id":     "Qwen/Qwen2.5-3B-Instruct",
+        "device":       "cuda",
+        "dtype":        "bfloat16",
 
-        # ── Training ────────────────────────────────────────────────────────
-        "num_steps":      1000,
-        "G":              8,
-        "batch_size":     4,
-        "grad_accum":     4,
+        # Training
+        "num_steps":    1000,
+        "G":            8,
+        "batch_size":   4,
+        "grad_accum":   4,
+        "lr":           5e-6,
 
-        # ── GRPO ─────────────────────────────────────────────────────────────
-        "beta":           0.010,
-        "clip_eps":       0.20,
+        # Phase-dependent GRPO (calibration → production)
+        # steps 0-100: tight trust region
+        "beta_phase1":       0.015,
+        "clip_eps_phase1":   0.15,
+        # steps 101+: relaxed
+        "beta_phase2":       0.010,
+        "clip_eps_phase2":   0.20,
+        "beta_switch_step":  100,
+        # Convenience fields (training/train.py reads these at step 0)
+        "beta":         0.015,
+        "clip_eps":     0.15,
 
-        # ── LoRA (Unsloth, Kaggle only) ─────────────────────────────────────
-        "lora_r":         32,
-        "lora_alpha":     64,
-        "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj",
-                           "gate_proj", "up_proj", "down_proj"],
+        # LoRA (full projection set for 3B)
+        "lora_r":          32,
+        "lora_alpha":      64,
+        "target_modules":  [
+            "q_proj", "k_proj", "v_proj", "o_proj",
+            "gate_proj", "up_proj", "down_proj",
+        ],
+
+        # I-2: No reference model — π_ref = π_old (saves 1.8 GB VRAM)
+        "load_ref_model": False,
         "load_in_4bit":   True,
 
-        # ── I-2: No reference model ─────────────────────────────────
-        "load_ref_model": False,
+        # Rollout
+        "max_new_tokens":      2048,
+        "min_new_tokens":      100,
+        "temperature":         0.85,
+        "top_p":               0.95,
+        "vllm_gpu_util":       0.50,
+        "vllm_sync_interval":  10,
 
-        # ── Rollout ──────────────────────────────────────────────────────────
-        "max_new_tokens": 2048,
-        "min_new_tokens": 100,
-        "temperature":    0.85,
-        "top_p":          0.95,
-        "vllm_gpu_util":  0.50,
+        # I-3: Recompute interval (25 steps)
+        "recompute_interval":  25,
 
-        # ── Rewards ──────────────────────────────────────────────────────────
-        "w_outcome":      0.70,
-        "w_struct":       0.30,
-        "reward_clip":    2.0,
+        # Rewards
+        "w_outcome":    0.70,
+        "w_struct":     0.30,
+        "reward_clip":  2.0,
 
-        # ── Curriculum ───────────────────────────────────────────────────────
-        "domains":        ["gsm8k", "mmlu", "strategyqa"],
-        "ucb_c":          0.5,
+        # Curriculum
+        "domains":             ["gsm8k", "mmlu", "strategyqa"],
+        "samples_per_domain":  500,
+        "ucb_c":               0.5,
 
-        # ── Eval ─────────────────────────────────────────────────────────────
-        "eval_interval":  100,
-
-        # ── Monitoring ───────────────────────────────────────────────────────
-        "wandb_project":  "stratarl_kaggle_3b",
+        # Eval & monitoring
+        "eval_interval":   100,
+        "wandb_project":   "stratarl_kaggle_3b",
     }
 
     Path(kaggle_config_path).parent.mkdir(exist_ok=True)
@@ -69,6 +84,7 @@ def generate_kaggle_config(
 
     print(f"✓ Kaggle config generated: {kaggle_config_path}")
     return kaggle_config_path
+
 
 if __name__ == "__main__":
     generate_kaggle_config()

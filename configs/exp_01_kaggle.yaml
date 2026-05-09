@@ -5,8 +5,14 @@ num_steps: 1000
 G: 8
 batch_size: 4
 grad_accum: 4
-beta: 0.01
-clip_eps: 0.2
+lr: 5.0e-06
+beta_phase1: 0.015
+clip_eps_phase1: 0.15
+beta_phase2: 0.01
+clip_eps_phase2: 0.2
+beta_switch_step: 100
+beta: 0.015
+clip_eps: 0.15
 lora_r: 32
 lora_alpha: 64
 target_modules:
@@ -17,13 +23,15 @@ target_modules:
 - gate_proj
 - up_proj
 - down_proj
-load_in_4bit: true
 load_ref_model: false
+load_in_4bit: true
 max_new_tokens: 2048
 min_new_tokens: 100
 temperature: 0.85
 top_p: 0.95
 vllm_gpu_util: 0.5
+vllm_sync_interval: 10
+recompute_interval: 25
 w_outcome: 0.7
 w_struct: 0.3
 reward_clip: 2.0
@@ -31,6 +39,7 @@ domains:
 - gsm8k
 - mmlu
 - strategyqa
+samples_per_domain: 500
 ucb_c: 0.5
 eval_interval: 100
 wandb_project: stratarl_kaggle_3b
