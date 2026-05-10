@@ -191,20 +191,19 @@ def build_kaggle_engine(
     if load_in_4bit:
         bnb_config = BitsAndBytesConfig(
             load_in_4bit              = True,
-            bnb_4bit_compute_dtype    = torch.bfloat16,
+            bnb_4bit_compute_dtype    = torch.float16,
             bnb_4bit_use_double_quant = True,
             bnb_4bit_quant_type       = "nf4",
         )
         model = AutoModelForCausalLM.from_pretrained(
             model_id,
             quantization_config = bnb_config,
-            device_map          = "auto",
+            torch_dtype         = torch.float16,
         )
     else:
         model = AutoModelForCausalLM.from_pretrained(
             model_id,
-            torch_dtype = torch.bfloat16,
-            device_map  = "auto",
-        )
+            torch_dtype = torch.float16,
+        ).to(device)
 
     return KaggleRolloutEngine(model, tokenizer, device=device)

@@ -23,8 +23,8 @@ def generate_kaggle_config(
 
         # Training
         "num_steps":    200,
-        "G":            4,
-        "batch_size":   2,
+        "G":            2,
+        "batch_size":   1,
         "grad_accum":   4,
         "lr":           5e-6,
         "max_new_tokens": 512,
@@ -52,7 +52,7 @@ def generate_kaggle_config(
 
         # I-2: No reference model — π_ref = π_old (saves 1.8 GB VRAM)
         "load_ref_model": False,
-        "load_in_4bit":   True,
+        "load_in_4bit":   False,
 
         # Rollout
         "temperature":         0.85,
