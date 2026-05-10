@@ -55,6 +55,7 @@ class KaggleRolloutEngine:
 
             while valid_count < G and attempts < max_attempts:
                 attempts += 1
+                num_to_generate = G - valid_count
                 outputs = self.model.generate(
                     prompt_ids,
                     attention_mask          = attention_mask,
@@ -63,41 +64,44 @@ class KaggleRolloutEngine:
                     do_sample               = True,
                     temperature             = temperature,
                     top_p                   = top_p,
+                    num_return_sequences    = num_to_generate,
                     repetition_penalty      = 1.1,
                     return_dict_in_generate = True,
                     output_scores           = True,
                     pad_token_id            = eos_id,
                     eos_token_id            = eos_id,
                     use_cache               = True,
+                    cache_implementation    = "static",
                 )
 
-                full_ids = outputs.sequences[0]
-                comp_ids = full_ids[prompt_len:].tolist()
+                for seq_idx in range(num_to_generate):
+                    full_ids = outputs.sequences[seq_idx]
+                    comp_ids = full_ids[prompt_len:].tolist()
 
-                token_logps = []
-                for step_idx, step_scores in enumerate(outputs.scores):
-                    if step_idx >= len(comp_ids):
-                        break
-                    log_probs_step = F.log_softmax(step_scores[0], dim=-1)
-                    chosen_token   = comp_ids[step_idx]
-                    token_logps.append(log_probs_step[chosen_token].item())
+                    token_logps = []
+                    for step_idx, step_scores in enumerate(outputs.scores):
+                        if step_idx >= len(comp_ids):
+                            break
+                        log_probs_step = F.log_softmax(step_scores[seq_idx], dim=-1)
+                        chosen_token   = comp_ids[step_idx]
+                        token_logps.append(log_probs_step[chosen_token].item())
 
-                # EOS truncation safety
-                if eos_id in comp_ids:
-                    eos_idx = comp_ids.index(eos_id)
-                    if eos_idx == 0:
-                        continue
-                    comp_ids    = comp_ids[:eos_idx + 1]
-                    token_logps = token_logps[:eos_idx + 1]
+                    # EOS truncation safety
+                    if eos_id in comp_ids:
+                        eos_idx = comp_ids.index(eos_id)
+                        if eos_idx == 0:
+                            continue
+                        comp_ids    = comp_ids[:eos_idx + 1]
+                        token_logps = token_logps[:eos_idx + 1]
 
-                completion_text = self.tokenizer.decode(comp_ids, skip_special_tokens=True)
-                finish_reason   = "stop" if comp_ids[-1] == eos_id else "length"
+                    completion_text = self.tokenizer.decode(comp_ids, skip_special_tokens=True)
+                    finish_reason   = "stop" if comp_ids[-1] == eos_id else "length"
 
-                completions.append(completion_text)
-                all_token_ids.append(comp_ids)
-                all_logprobs.append(token_logps)
-                finish_reasons.append(finish_reason)
-                valid_count += 1
+                    completions.append(completion_text)
+                    all_token_ids.append(comp_ids)
+                    all_logprobs.append(token_logps)
+                    finish_reasons.append(finish_reason)
+                    valid_count += 1
 
             while len(completions) < G:
                 if len(completions) > 0:

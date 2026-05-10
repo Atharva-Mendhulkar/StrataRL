@@ -19,14 +19,16 @@ def generate_kaggle_config(
         # Model
         "model_id":     "Qwen/Qwen2.5-3B-Instruct",
         "device":       "cuda",
-        "dtype":        "bfloat16",
+        "dtype":        "float16",
 
         # Training
-        "num_steps":    1000,
-        "G":            8,
-        "batch_size":   4,
+        "num_steps":    200,
+        "G":            4,
+        "batch_size":   2,
         "grad_accum":   4,
         "lr":           5e-6,
+        "max_new_tokens": 512,
+        "min_new_tokens": 32,
 
         # Phase-dependent GRPO (calibration → production)
         # steps 0-100: tight trust region
@@ -53,8 +55,6 @@ def generate_kaggle_config(
         "load_in_4bit":   True,
 
         # Rollout
-        "max_new_tokens":      2048,
-        "min_new_tokens":      100,
         "temperature":         0.85,
         "top_p":               0.95,
         "vllm_gpu_util":       0.50,
@@ -70,11 +70,11 @@ def generate_kaggle_config(
 
         # Curriculum
         "domains":             ["gsm8k", "mmlu", "strategyqa"],
-        "samples_per_domain":  500,
+        "samples_per_domain":  100,
         "ucb_c":               0.5,
 
         # Eval & monitoring
-        "eval_interval":   100,
+        "eval_interval":   100000,
         "wandb_project":   "stratarl_kaggle_3b",
     }
 
