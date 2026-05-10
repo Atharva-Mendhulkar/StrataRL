@@ -1,11 +1,13 @@
 model_id: Qwen/Qwen2.5-3B-Instruct
 device: cuda
-dtype: bfloat16
-num_steps: 1000
-G: 8
-batch_size: 4
+dtype: float16
+num_steps: 200
+G: 4
+batch_size: 2
 grad_accum: 4
 lr: 5.0e-06
+max_new_tokens: 512
+min_new_tokens: 32
 beta_phase1: 0.015
 clip_eps_phase1: 0.15
 beta_phase2: 0.01
@@ -25,8 +27,6 @@ target_modules:
 - down_proj
 load_ref_model: false
 load_in_4bit: true
-max_new_tokens: 2048
-min_new_tokens: 100
 temperature: 0.85
 top_p: 0.95
 vllm_gpu_util: 0.5
@@ -39,7 +39,7 @@ domains:
 - gsm8k
 - mmlu
 - strategyqa
-samples_per_domain: 500
+samples_per_domain: 100
 ucb_c: 0.5
-eval_interval: 100
+eval_interval: 100000
 wandb_project: stratarl_kaggle_3b
