@@ -6,7 +6,7 @@
 ![Hugging Face](https://img.shields.io/badge/Hugging%20Face-FFD21E?logo=huggingface&logoColor=000)
 ![TRL](https://img.shields.io/badge/TRL-005571)
 ![vLLM](https://img.shields.io/badge/vLLM-black)
-![PEFT (QLoRA)](https://img.shields.io/badge/PEFT_(QLoRA)-333333)
+![PEFT (QLoRA)](https://img.shields.io/badge/PEFT_%28QLoRA%29-333333)
 ![W&B](https://img.shields.io/badge/Weights_&_Biases-FFBE00?logo=weightsandbiases&logoColor=white)
 ![SymPy](https://img.shields.io/badge/SymPy-3B5526?logo=sympy&logoColor=white)
 
@@ -34,7 +34,7 @@ StrataRL solves a specific problem standard GRPO pipelines ignore: improving rea
 
 Standard GRPO on a 3B model trained on mixed-domain data produces a consistent failure mode:
 
-```
+```text
 Standard GRPO (mixed batch, global normalization):
   GSM8K:       +6%   [PASS] (arithmetic step decomposition reinforced)
   MMLU:        -3%   [FAIL] (factual recall templates overwritten)
@@ -53,133 +53,101 @@ The root cause is **cross-stratum bias**: global advantage normalization compare
 
 ```mermaid
 flowchart TB
-
-    %% =========================
-    %% Curriculum
-    %% =========================
-
-    A["<br><b>UCB Curriculum Sampler</b><br><br>
-    Adaptive domain scheduling<br>
+    A["UCB Curriculum Sampler
+    
+    Adaptive domain scheduling
     one domain per rollout step"]
 
-    %% =========================
-    %% Rollout
-    %% =========================
-
-    B["<br><b>Rollout Engine</b><br><br>
-
-    <b>Backends</b><br>
-    • HF generate() on M4<br>
-    • vLLM on Kaggle<br><br>
-
-    <b>Group Size</b><br>
-    • G=4 on M4<br>
-    • G=8 on Kaggle<br><br>
-
-    <b>Captured Data</b><br>
-    • per-token logprobs<br>
-    • rollout traces<br><br>
-
-    <b>Reference Policy</b><br>
+    B["Rollout Engine
+    
+    Backends
+    - HF generate() on M4
+    - vLLM on Kaggle
+    
+    Group Size
+    - G=4 on M4
+    - G=8 on Kaggle
+    
+    Captured Data
+    - per-token logprobs
+    - rollout traces
+    
+    Reference Policy
     π_old = π_ref"]
 
-    %% =========================
-    %% Reward
-    %% =========================
-
-    C["<br><b>Reward Engine</b><br><br>
-
-    <b>R_outcome</b><br>
-    • SymPy numeric verifier<br>
-    • letter match verifier<br>
-    • yes/no verifier<br><br>
-
-    <b>R_struct</b><br>
-    • domain regex templates<br>
-    • partial credit scoring<br><br>
-
-    <b>R_token_rep</b><br>
-    • token n-gram repetition gate<br><br>
-
-    <b>Normalization</b><br>
-    • clip rewards to [-2, 2]<br>
-    • GDPO normalization<br>
-    • annealed noise<br>
+    C["Reward Engine
+    
+    R_outcome
+    - SymPy numeric verifier
+    - letter match verifier
+    - yes/no verifier
+    
+    R_struct
+    - domain regex templates
+    - partial credit scoring
+    
+    R_token_rep
+    - token n-gram repetition gate
+    
+    Normalization
+    - clip rewards to [-2, 2]
+    - GDPO normalization
+    - annealed noise
       ±0.02 → ±0.004"]
 
-    %% =========================
-    %% SAN
-    %% =========================
-
-    D["<br><b>SAN Advantage Engine</b><br><br>
-
-    <b>Per-Stratum Z-Normalization</b><br><br>
-
-    <b>Zero Variance</b><br>
-    • center only<br><br>
-
-    <b>Low Variance</b><br>
-    • dampened scaling<br><br>
-
-    <b>Normal Variance</b><br>
-    • full Z-normalization<br><br>
-
-    <b>Safety Controls</b><br>
-    • advantage clip ±5.0<br>
-    • length norm clamp<br>
+    D["SAN Advantage Engine
+    
+    Per-Stratum Z-Normalization
+    
+    Zero Variance
+    - center only
+    
+    Low Variance
+    - dampened scaling
+    
+    Normal Variance
+    - full Z-normalization
+    
+    Safety Controls
+    - advantage clip ±5.0
+    - length norm clamp
       at 512 tokens"]
 
-    %% =========================
-    %% GRPO
-    %% =========================
+    E["GRPO Loss
+    
+    Training Mode
+    - QLoRA
+    - no frozen ref_model
+    
+    Ratio Controls
+    - log_ratio clamp [-10, 10]
+    
+    KL Objective
+    KL = exp(old_logp)
+    × (old_logp − policy_logp)
+    
+    Stability
+    - detach-normalized KL
+    - raw_kl logged separately"]
 
-    E["<br><b>GRPO Loss</b><br><br>
-
-    <b>Training Mode</b><br>
-    • QLoRA<br>
-    • no frozen ref_model<br><br>
-
-    <b>Ratio Controls</b><br>
-    • log_ratio clamp [-10, 10]<br><br>
-
-    <b>KL Objective</b><br>
-    KL = exp(old_logp)<br>
-    × (old_logp − policy_logp)<br><br>
-
-    <b>Stability</b><br>
-    • detach-normalized KL<br>
-    • raw_kl logged separately"]
-
-    %% =========================
-    %% Monitor
-    %% =========================
-
-    F["<br><b>Monitoring</b><br><br>
-
-    <b>Tracking</b><br>
-    • Δ_O/S tracker<br>
-    • prefix diversity<br>
-    • H_answer entropy<br><br>
-
-    <b>Validation</b><br>
-    • recompute every 25 steps<br><br>
-
-    <b>Failure Detection</b><br>
-    • domain collapse detector"]
-
-    %% =========================
-    %% Flow
-    %% =========================
+    F["Monitoring
+    
+    Tracking
+    - Δ_O/S tracker
+    - prefix diversity
+    - H_answer entropy
+    
+    Validation
+    - recompute every 25 steps
+    
+    Failure Detection
+    - domain collapse detector"]
 
     A -->|"sample next domain"| B
     B -->|"generate rollouts"| C
     C -->|"compute rewards"| D
     D -->|"normalized advantages"| E
     E -->|"training metrics"| F
-
-    %% =========================
-    %% Styles
-    %% =========================
 
     classDef sampler fill:#1e293b,color:#ffffff,stroke:#94a3b8,stroke-width:2px
     classDef rollout fill:#0f766e,color:#ffffff,stroke:#5eead4,stroke-width:2px
@@ -664,7 +632,7 @@ Run B is the critical comparison — it directly demonstrates the forgetting pro
 
 ## Repository Structure
 
-```
+```text
 stratarl/
 ├── README.md
 ├── CLAUDE.md                   ← agent runbook: patches, tests, migration

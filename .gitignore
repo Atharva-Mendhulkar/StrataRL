@@ -1,0 +1,51 @@
+# Environments
+.env
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest
+.pytest_cache/
+
+# Weights and Biases
+wandb/
+
+# Training Outputs
+outputs/
+checkpoints/
+*.safetensors
+*.bin
+*.pt
+
+# Kaggle Upload Artifacts
+kaggle_upload/
+*.zip
+
+# OS Generated
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+research.md*
