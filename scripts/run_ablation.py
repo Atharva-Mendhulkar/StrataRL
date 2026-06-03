@@ -52,8 +52,8 @@ def run_ablation(name: str, config: dict, base_config_path: str, steps: int = 50
     
     # Using m4/m4_train.py as it's the local entry point
     result = subprocess.run(
-        ["python", "m4/m4_train.py", "--config", tmp_path],
-        env={**os.environ, "PYTHONPATH": "."},
+        ["python3", "m4/m4_train.py", "--config", tmp_path],
+        env={**os.environ, "PYTHONPATH": ".", "WANDB_MODE": "disabled"},
         capture_output=True, text=True
     )
     return result.returncode, result.stdout, result.stderr
