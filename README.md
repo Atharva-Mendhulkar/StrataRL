@@ -2,7 +2,15 @@
 
 **Forensic-grade GRPO infrastructure for multi-domain reasoning in Small Language Models.**
 
-> Infrastructure-Certified v2.0 · 3B Verified on MPS · Ready for Kaggle P100 Migration
+![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=flat&logo=PyTorch&logoColor=white)
+![Hugging Face](https://img.shields.io/badge/Hugging%20Face-FFD21E?logo=huggingface&logoColor=000)
+![TRL](https://img.shields.io/badge/TRL-005571)
+![vLLM](https://img.shields.io/badge/vLLM-black)
+![PEFT (QLoRA)](https://img.shields.io/badge/PEFT_(QLoRA)-333333)
+![W&B](https://img.shields.io/badge/Weights_&_Biases-FFBE00?logo=weightsandbiases&logoColor=white)
+![SymPy](https://img.shields.io/badge/SymPy-3B5526?logo=sympy&logoColor=white)
+
+> Infrastructure-Certified v2.0 | 3B Verified on MPS | Ready for Kaggle P100 Migration
 
 StrataRL solves a specific problem standard GRPO pipelines ignore: improving reasoning simultaneously across structurally different benchmark domains (GSM8K, MMLU, StrategyQA) without catastrophic cross-domain forgetting. It introduces **Stratified Advantage Normalization (SAN)** and **domain-conditioned Structural Template rewards (ST-GRPO)** to prevent the gradient-level cross-stratum bias that single-domain RL training causes.
 
@@ -28,9 +36,9 @@ Standard GRPO on a 3B model trained on mixed-domain data produces a consistent f
 
 ```
 Standard GRPO (mixed batch, global normalization):
-  GSM8K:       +6%   ✓  (arithmetic step decomposition reinforced)
-  MMLU:        -3%   ✗  (factual recall templates overwritten)
-  StrategyQA:  -5%   ✗  (implicit hop structure destroyed)
+  GSM8K:       +6%   [PASS] (arithmetic step decomposition reinforced)
+  MMLU:        -3%   [FAIL] (factual recall templates overwritten)
+  StrategyQA:  -5%   [FAIL] (implicit hop structure destroyed)
 ```
 
 The root cause is **cross-stratum bias**: global advantage normalization compares rewards from easy domains (GSM8K, high absolute rewards) against hard domains (StrategyQA, lower absolute rewards) in the same batch. Valid reasoning traces for harder domains receive negative normalized advantages and are suppressed.
@@ -212,7 +220,7 @@ Each domain has required reasoning tags that must appear inside `<think>` to ear
 
 > **Critical:** These are measured baselines using the exact prompt templates and extraction logic used during training. Literature numbers are significantly higher because they do not enforce `<think>`/`<answer>` formatting. Using literature numbers as the improvement baseline would produce meaningless deltas.
 
-**Model:** `Qwen/Qwen2.5-3B-Instruct` · **Decoding:** greedy · **N=20 per benchmark**
+**Model:** `Qwen/Qwen2.5-3B-Instruct` | **Decoding:** greedy | **N=20 per benchmark**
 
 | Benchmark | Literature | **Measured (Actual)** | Gap | StrataRL Target |
 |-----------|-----------|----------------------|-----|-----------------|
@@ -278,7 +286,7 @@ python m4/m4_train.py --config m4/m4_config.yaml \
 [Step 10] loss=0.8xxx  raw_kl=0.001  outcome=0.1xx  Δ_O/S=OK
 [Step 25] RECOMPUTE CHECK: drift=0.xxx (OK)
 [Step 50] loss=0.5xxx  raw_kl=0.004  outcome=0.3xx  Δ_O/S=OK
-✓ Smoke test completed
+[SUCCESS] Smoke test completed
 ```
 
 **Hard stops — do not proceed to Kaggle if any appear:**
@@ -412,7 +420,7 @@ subprocess.run(['git', 'clone', '--depth', '1', repo_url, '/kaggle/working/RLver
 
 os.environ['PYTHONPATH'] = '/kaggle/working/RLverify-main'
 sys.path.insert(0, '/kaggle/working/RLverify-main')
-print("✓ Repo cloned")
+print("[SUCCESS] Repo cloned")
 ```
 
 ---
@@ -429,7 +437,7 @@ patch_content = """
 
 with open('/kaggle/working/RLverify-main/rewards/reward_engine.py', 'w') as f:
     f.write(patch_content)
-print("✓ Patched reward_engine.py")
+print("[SUCCESS] Patched reward_engine.py")
 ```
 
 ---
@@ -444,7 +452,7 @@ Run these cells in order in your Kaggle notebook after extracting the source (Me
 %%bash
 pip install "unsloth[colab]" -q
 pip install trl vllm sympy wandb datasets peft accelerate -q
-echo "✓ Dependencies installed"
+echo "[SUCCESS] Dependencies installed"
 ```
 
 **Cell 3: W&B authentication**
@@ -457,7 +465,7 @@ os.environ['WANDB_API_KEY'] = UserSecretsClient().get_secret("WANDB_API_KEY")
 
 import wandb
 wandb.login(key=os.environ['WANDB_API_KEY'])
-print("✓ W&B authenticated")
+print("[SUCCESS] W&B authenticated")
 ```
 
 **Cell 4: Generate config and run pre-flight audit**
@@ -622,10 +630,10 @@ All experiments use `Qwen2.5-3B-Instruct` on Kaggle P100.
 
 | Condition | SAN | ST-GRPO | Expected result |
 |-----------|-----|---------|----------------|
-| A: SFT only | — | — | All benchmarks at measured baseline |
-| B: Standard GRPO | ✗ | ✗ | GSM8K +X%, MMLU regresses |
-| C: GRPO + SAN | ✓ | ✗ | Multi-domain improves, smaller gain |
-| D: StrataRL full | ✓ | ✓ | All three benchmarks improve |
+| A: SFT only | - | - | All benchmarks at measured baseline |
+| B: Standard GRPO | [NO] | [NO] | GSM8K +X%, MMLU regresses |
+| C: GRPO + SAN | [YES] | [NO] | Multi-domain improves, smaller gain |
+| D: StrataRL full | [YES] | [YES] | All three benchmarks improve |
 
 Run B is the critical comparison — it directly demonstrates the forgetting problem.
 
@@ -744,4 +752,4 @@ python scripts/generate_report.py
 
 ---
 
-*StrataRL v2.0 · Infrastructure-Certified · 9 patches applied · 3B MPS-verified*
+*StrataRL v2.0 | Infrastructure-Certified | 9 patches applied | 3B MPS-verified*
