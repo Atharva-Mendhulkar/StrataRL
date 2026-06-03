@@ -61,28 +61,27 @@ def grpo_loss(
     surr2       = torch.clamp(ratio, 1 - clip_eps, 1 + clip_eps) * adv_tokens
     policy_loss = -torch.min(surr1, surr2)
 
-    # KL — CORRECT formula (fixed sign, uses actual old_logprobs)
-    # = p_old(t) * log(p_old(t) / p_new(t)) per token
+    # KL — CORRECT MC formula for sampled tokens (fixed sign)
+    # E[log(p_old) - log(p_new)] over rollout tokens is the KL divergence.
     # Always >= 0 in expectation. Individual tokens may be negative — do not clamp.
-    raw_kl_per_token = torch.exp(old_logp_aligned) * (old_logp_aligned - policy_logp)
+    raw_kl_per_token = old_logp_aligned - policy_logp
 
-    # I-9: Track raw KL for absolute drift monitoring (separate from normalized)
-    # Scale is calculated ONLY over completion tokens to avoid dilution
+    # I-9: Track raw KL for absolute drift monitoring
+    # Do NOT normalize KL before adding it to the loss!
+    # Normalizing it forces the gradient to explode when KL is close to 0.
     kl_scale  = (raw_kl_per_token.abs() * comp_mask).sum().detach() / (comp_mask.sum() + 1e-8)
-    kl_norm   = raw_kl_per_token / (kl_scale + 1e-8)
 
-    # Entropy
-    entropy = -(torch.exp(policy_logp) * policy_logp * comp_mask).sum() / (comp_mask.sum() + 1e-8)
+    # Entropy - Correct MC estimate over sampled tokens
+    entropy = -(policy_logp * comp_mask).sum() / (comp_mask.sum() + 1e-8)
 
     # Aggregate
     denom             = comp_mask.sum() + 1e-8
     policy_loss_mean  = (policy_loss * comp_mask).sum() / denom
-    kl_norm_mean      = (kl_norm * comp_mask).sum() / denom
     raw_kl_mean       = (raw_kl_per_token * comp_mask).sum() / denom    # I-9
     clip_frac         = ((ratio - 1).abs() > clip_eps).float()
     clip_frac_mean    = (clip_frac * comp_mask).sum() / denom
 
-    total_loss = policy_loss_mean + beta * kl_norm_mean
+    total_loss = policy_loss_mean + beta * raw_kl_mean
 
     entropy_deficit = torch.tensor(0.0, device=input_ids.device)
     if entropy_floor > 0.0:
@@ -92,9 +91,7 @@ def grpo_loss(
     return {
         "loss":            total_loss,
         "policy_loss":     policy_loss_mean,
-        "kl_norm":         kl_norm_mean,
         "raw_kl_mean":     raw_kl_mean,       # I-9: absolute drift signal
-        "kl_scale":        kl_scale,
         "entropy":         entropy,
         "entropy_deficit": entropy_deficit,
         "ratio_mean":      (ratio * comp_mask).sum() / denom,

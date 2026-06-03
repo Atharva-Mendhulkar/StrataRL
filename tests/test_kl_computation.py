@@ -8,7 +8,7 @@ class TestKLFormula:
 
     def test_kl_is_nonnegative_in_expectation(self):
         """
-        The KL formula p_old × (log_p_old - log_p_new) should be
+        The KL formula log_p_old - log_p_new should be
         non-negative in expectation over many tokens.
         
         This catches the sign-inversion bug:
@@ -29,7 +29,7 @@ class TestKLFormula:
         new_token_logp = new_logp.gather(2, labels.unsqueeze(-1)).squeeze(-1)
 
         # Compute KL using our formula
-        kl = torch.exp(old_token_logp) * (old_token_logp - new_token_logp)
+        kl = old_token_logp - new_token_logp
         kl_mean = kl.mean().item()
 
         # Must be non-negative
@@ -42,14 +42,14 @@ class TestKLFormula:
     def test_kl_zero_for_identical_policies(self):
         """If old == new policy, KL must be exactly 0."""
         logp = torch.tensor([[-1.0, -2.0, -1.5, -0.5]])
-        kl   = torch.exp(logp) * (logp - logp)
+        kl   = logp - logp
         assert abs(kl.sum().item()) < 1e-6
 
     def test_kl_positive_for_diverged_policy(self):
         """If new policy has moved away from old, KL > 0."""
         old_logp = torch.tensor([[-1.0, -2.0, -3.0, -0.5]])
         new_logp = torch.tensor([[-0.5, -3.0, -2.0, -1.5]])   # different distribution
-        kl = torch.exp(old_logp) * (old_logp - new_logp)
+        kl = old_logp - new_logp
         assert kl.sum().item() > 0
 
     def test_wrong_formula_is_negative(self):
