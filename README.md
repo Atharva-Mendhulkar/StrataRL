@@ -277,103 +277,33 @@ python m4/m4_train.py --config m4/exp_01_local_3b.yaml
 
 ## 5. Kaggle Migration (Private Repo)
 
-The repo is private. Kaggle cannot `git clone` a private repo without authentication. Three methods are available — **Method A is recommended**.
+The repository includes a ready-to-use Jupyter Notebook (`kaggle_training.ipynb`) that fully automates the Kaggle execution pipeline. This is the **recommended** method for running StrataRL on Kaggle, as it natively handles dependency conflicts (e.g. `bitsandbytes`, `vllm`, `transformers`), environment setup, and stdout streaming.
 
----
+### Method A — Automated Notebook Execution (Recommended)
 
-### Method A — Kaggle Dataset Upload (Recommended, No Secrets Needed)
+**Step 1: Upload Repo as Kaggle Dataset**
+1. Zip this repository (excluding `.venv`, `__pycache__`, etc.).
+2. In Kaggle, go to **Datasets -> New Dataset**.
+3. Upload the zip file and name it (e.g., `stratarl4-src`).
 
-Bundle the repo as a Kaggle dataset. Kaggle datasets can be private and attached to notebooks without any credentials.
+**Step 2: Import Notebook**
+1. In Kaggle, go to **Notebooks -> New Notebook**.
+2. Click **File -> Import Notebook** and upload `kaggle_training.ipynb` (from the root of this repo).
 
-**Step 1: Create a zip of the repo (exclude venv and cache)**
+**Step 3: Attach Dataset and Run**
+1. In the right sidebar of the notebook, click **Add Input** and search for your uploaded dataset (e.g. `stratarl4-src`).
+2. (Optional) Add your W&B API Key in **Secrets** as `WANDB_API_KEY`.
+3. Click **Run All**.
 
-```bash
-# From repo root on M4
-cd ~/projects
-zip -r stratarl_src.zip stratarl/ \
-  --exclude "stratarl/.venv/*" \
-  --exclude "stratarl/__pycache__/*" \
-  --exclude "stratarl/.git/*" \
-  --exclude "stratarl/reports/*" \
-  --exclude "stratarl/*.egg-info/*"
-```
+The notebook will automatically:
+- Extract and copy the repo to `/kaggle/working/StrataRL-main`
+- Purge conflicting Kaggle packages and install correct versions
+- Run pre-flight checks (CUDA, Imports)
+- Launch `training/train.py` and stream the logs securely to the notebook output!
 
-**Step 2: Upload as a private Kaggle dataset**
+### Method B — GitHub Token (Git Workflow)
 
-```bash
-# Install Kaggle CLI if not present
-pip install kaggle
-
-# Set credentials (~/.kaggle/kaggle.json)
-# Download from: kaggle.com → Account → API → Create New Token
-
-# Create dataset metadata
-mkdir kaggle_upload && cd kaggle_upload
-cat > dataset-metadata.json << 'EOF'
-{
-  "title": "stratarl-src",
-  "id": "YOUR_KAGGLE_USERNAME/stratarl-src",
-  "licenses": [{"name": "other"}]
-}
-EOF
-
-cp ../stratarl_src.zip .
-kaggle datasets create -p . --dir-mode zip
-```
-
-**Step 3: Attach dataset to Kaggle notebook**
-
-In the Kaggle notebook editor:
-- Click **Add Data** (right sidebar)
-- Search "stratarl-src" under "Your Datasets"
-- Click **Add**
-- Source files appear at `/kaggle/input/stratarl-src/`
-
-**Step 4: Extract and configure in notebook**
-
-```python
-# Cell 1: Extract source
-import zipfile, os, sys
-
-with zipfile.ZipFile('/kaggle/input/stratarl-src/stratarl_src.zip', 'r') as z:
-    z.extractall('/kaggle/working/')
-
-os.environ['PYTHONPATH'] = '/kaggle/working/RLverify-main'
-sys.path.insert(0, '/kaggle/working/RLverify-main')
-
-# Optional: verify
-import subprocess
-subprocess.run(['python', '-c', 'import m4.m4_rollout_engine; print("Import success")'],
-                       env={**os.environ, 'PYTHONPATH': '/kaggle/working/RLverify-main'})
-print(result.stdout)
-```
-
-**Update dataset after code changes:**
-
-```bash
-# From repo root on M4 — re-zip and push update
-zip -r stratarl_src.zip stratarl/ --exclude "stratarl/.venv/*" ...
-cd kaggle_upload && cp ../stratarl_src.zip .
-kaggle datasets version -p . -m "Patch I-1 through I-9 applied"
-```
-
----
-
-### Method B — GitHub Token (If You Prefer Git Workflow)
-
-**Step 1: Create a fine-grained GitHub token**
-
-GitHub → Settings → Developer Settings → Fine-grained tokens → Generate new token
-- Repository access: Only `stratarl`
-- Permissions: Contents → Read-only
-
-**Step 2: Store token as Kaggle Secret**
-
-Kaggle → Account → Secrets → Add Secret
-- Name: `GITHUB_TOKEN`
-- Value: `github_pat_xxxx...`
-
-**Step 3: Clone in notebook**
+If you prefer using `git clone` instead of a Kaggle Dataset, simply modify the first cell of `kaggle_training.ipynb` to use a GitHub PAT:
 
 ```python
 # Cell 1: Authenticate and clone
@@ -381,115 +311,12 @@ from kaggle_secrets import UserSecretsClient
 import subprocess, os, sys
 
 token = UserSecretsClient().get_secret("GITHUB_TOKEN")
-repo_url = f"https://{token}@github.com/YOUR_USERNAME/stratarl.git"
+repo_url = f"https://{token}@github.com/YOUR_USERNAME/StrataRL.git"
 
-subprocess.run(['git', 'clone', '--depth', '1', repo_url, '/kaggle/working/RLverify-main'],
-               check=True)
-
-os.environ['PYTHONPATH'] = '/kaggle/working/RLverify-main'
-sys.path.insert(0, '/kaggle/working/RLverify-main')
+subprocess.run(['git', 'clone', '--depth', '1', repo_url, '/kaggle/working/StrataRL-main'], check=True)
 print("[SUCCESS] Repo cloned")
 ```
-
----
-
-### Method C — Manual Notebook Paste (Fallback, Small Changes Only)
-
-For single-file patches when you don't want to re-upload the dataset:
-
-```python
-# Cell: Patch a single file in-place
-patch_content = """
-# paste updated file content here
-""".strip()
-
-with open('/kaggle/working/RLverify-main/rewards/reward_engine.py', 'w') as f:
-    f.write(patch_content)
-print("[SUCCESS] Patched reward_engine.py")
-```
-
----
-
-### Full Kaggle Run Sequence
-
-Run these cells in order in your Kaggle notebook after extracting the source (Method A/B above).
-
-**Cell 2: Install dependencies**
-
-```python
-%%bash
-pip install "unsloth[colab]" -q
-pip install trl vllm sympy wandb datasets peft accelerate -q
-echo "[SUCCESS] Dependencies installed"
-```
-
-**Cell 3: W&B authentication**
-
-```python
-import os
-from kaggle_secrets import UserSecretsClient
-
-os.environ['WANDB_API_KEY'] = UserSecretsClient().get_secret("WANDB_API_KEY")
-
-import wandb
-wandb.login(key=os.environ['WANDB_API_KEY'])
-print("[SUCCESS] W&B authenticated")
-```
-
-**Cell 4: Generate config and run pre-flight audit**
-
-```python
-%%bash
-cd /kaggle/working/RLverify-main
-export PYTHONPATH=.
-
-python scripts/generate_kaggle_config.py
-python scripts/audit_config.py --config configs/exp_01_kaggle.yaml
-```
-
-**Cell 5: Measure actual baselines (N=20, ~15 min)**
-
-```python
-%%bash
-cd /kaggle/working/RLverify-main && export PYTHONPATH=.
-python scripts/measure_baseline.py \
-  --model Qwen/Qwen2.5-3B-Instruct \
-  --n_samples 20 \
-  --output reports/actual_baselines.json
-cat reports/actual_baselines.json
-```
-
-**Cell 6: Launch EXP_01 (1000 steps, ~6–8 hr on P100)**
-
-```python
-%%bash
-cd /kaggle/working/RLverify-main && export PYTHONPATH=.
-python training/train.py \
-  --config configs/exp_01_kaggle.yaml \
-  --run_name EXP_01_qwen3b_1000steps \
-  --wandb_project stratarl_kaggle_3b
-```
-
-> **Step 100 gate:** Check W&B before committing to the full run. If GSM8K has not improved over baseline and `raw_kl_mean > 0.05`, stop and review. The first 100 steps are a calibration phase — do not assume the full 1000 steps are worthwhile until step-100 metrics are healthy.
-
-**Cell 7: Post-training evaluation**
-
-```python
-%%bash
-cd /kaggle/working/RLverify-main && export PYTHONPATH=.
-python scripts/measure_baseline.py \
-  --model ./outputs/final/ \
-  --n_samples 20 \
-  --benchmarks gsm8k mmlu strategyqa \
-  --baseline_path reports/actual_baselines.json \
-  --output reports/final_eval.json
-
-python scripts/generate_report.py \
-  --baseline reports/actual_baselines.json \
-  --result reports/final_eval.json
-```
-
----
+Then run the rest of the notebook normally.
 
 ## 6. Configuration Reference
 

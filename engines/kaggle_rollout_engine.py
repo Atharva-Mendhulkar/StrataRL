@@ -74,15 +74,20 @@ class KaggleRolloutEngine:
                     cache_implementation    = "static",
                 )
 
+                with torch.no_grad():
+                    raw_logits = self.model(outputs.sequences).logits
+
                 for seq_idx in range(num_to_generate):
                     full_ids = outputs.sequences[seq_idx]
                     comp_ids = full_ids[prompt_len:].tolist()
 
                     token_logps = []
-                    for step_idx, step_scores in enumerate(outputs.scores):
-                        if step_idx >= len(comp_ids):
+                    seq_logits = raw_logits[seq_idx]
+                    for step_idx in range(len(comp_ids)):
+                        idx = prompt_len + step_idx - 1
+                        if idx >= seq_logits.shape[0]:
                             break
-                        log_probs_step = F.log_softmax(step_scores[seq_idx], dim=-1)
+                        log_probs_step = F.log_softmax(seq_logits[idx], dim=-1)
                         chosen_token   = comp_ids[step_idx]
                         token_logps.append(log_probs_step[chosen_token].item())
 
