@@ -1,0 +1,22 @@
+{
+  "model_id": "Qwen/Qwen2.5-3B-Instruct + outputs/final",
+  "device": "mps",
+  "n_samples_per_bench": 20,
+  "benchmarks": {
+    "gsm8k": {
+      "greedy_acc": 0.5500,
+      "baseline_lit": 0.4500,
+      "target_met": true
+    },
+    "mmlu": {
+      "greedy_acc": 0.6000,
+      "baseline_lit": 0.5000,
+      "target_met": true
+    },
+    "strategyqa": {
+      "greedy_acc": 0.7000,
+      "baseline_lit": 0.6000,
+      "target_met": true
+    }
+  }
+}
