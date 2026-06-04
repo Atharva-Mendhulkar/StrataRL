@@ -19,14 +19,16 @@ class TestUCBScheduler:
         assert abs(sum(weights.values()) - 1.0) < 1e-6
 
     def test_all_correct_domain_suppressed(self):
-        """ALL_CORRECT domain should get zero probability."""
+        """ALL_CORRECT domain should drop to its minimum floor, not zero."""
         scheduler = UCBCurriculumScheduler(["gsm8k", "mmlu"])
         scheduler.set_collapse_types({"gsm8k": "ALL_CORRECT", "mmlu": "HEALTHY"})
         weights   = scheduler.get_weights()
-        assert weights["gsm8k"] < 0.01, \
-            "ALL_CORRECT domain must be suppressed to near-zero"
-        assert weights["mmlu"] > 0.99, \
-            "Non-collapsed domain must absorb ALL_CORRECT's probability"
+        assert weights["gsm8k"] > 0.05, \
+            "ALL_CORRECT domain must not be starved (floor protection)"
+        assert weights["gsm8k"] < 0.20, \
+            "ALL_CORRECT domain must drop to near floor level"
+        assert weights["mmlu"] > 0.80, \
+            "Non-collapsed domain must absorb majority of probability"
 
     def test_all_wrong_domain_reduced_not_zero(self):
         """ALL_WRONG domain should be suppressed but not eliminated."""
