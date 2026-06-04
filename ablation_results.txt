@@ -1,0 +1,30 @@
+
+Starting: EXP_01_CONTROL — Full system — all mechanisms active
+  Hypothesis: Highest benchmark accuracy. Reference for all deltas.
+Executing: python m4/m4_train.py --config /tmp/ablation_EXP_01_CONTROL.yaml
+  Exit code: 0
+  STDOUT summary: 
+
+Starting: EXP_02_NO_SAN — SAN disabled — global normalization only
+  Hypothesis: MMLU/StrategyQA accuracy drops. Domain starvation re-emerges.
+Executing: python m4/m4_train.py --config /tmp/ablation_EXP_02_NO_SAN.yaml
+  Exit code: 0
+  STDOUT summary: 
+
+Starting: EXP_03_G4 — G=4 group size (vs G=8 control)
+  Hypothesis: Accuracy drops due to high-variance advantage estimates.
+Executing: python m4/m4_train.py --config /tmp/ablation_EXP_03_G4.yaml
+  Exit code: 0
+  STDOUT summary: 
+
+Starting: EXP_04_NO_KL — β=0 unconstrained exploration
+  Hypothesis: Higher peak accuracy but risk of entropy collapse.
+Executing: python m4/m4_train.py --config /tmp/ablation_EXP_04_NO_KL.yaml
+  Exit code: 0
+  STDOUT summary: 
+
+Starting: EXP_05_NO_CURRICULUM — Uniform domain sampling (UCB disabled)
+  Hypothesis: ~2% accuracy drop. Weak domains starve gradient.
+Executing: python m4/m4_train.py --config /tmp/ablation_EXP_05_NO_CURRICULUM.yaml
+  Exit code: 0
+  STDOUT summary: 
