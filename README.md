@@ -220,9 +220,9 @@ Following the Kaggle migration and KL-Divergence bug resolution, the model was e
 |-----------|--------------------|---------|-------|--------------|------------|
 | **GSM8K** | 0.5000 | 0.5500 | +0.0500 | 0.4500 | YES |
 | **MMLU** | 0.3000 | 0.6000 | +0.3000 | 0.5000 | YES |
-| **STRATEGYQA** | 0.9000 | 0.7000 | -0.2000 | 0.6000 | YES |
+| **STRATEGYQA** | 0.9000 | 0.7000 | -0.2000 | 0.6000 | NO — REGRESSION |
 
-> **Summary:** All KPI targets were successfully met. The model learned to correctly wrap reasoning steps within the `<think>` tags and successfully navigated the UCB multi-armed bandit curriculum without domain collapse.
+> **Summary:** The model successfully improved on GSM8K and MMLU, but experienced catastrophic forgetting on StrategyQA. Because StrategyQA started with a high baseline (0.900), the UCB scheduler likely under-sampled it compared to the weaker domains, allowing gradient pressure from MMLU/GSM8K to overwrite StrategyQA's internal representations.
 
 
 ## 5. M4 Local Setup

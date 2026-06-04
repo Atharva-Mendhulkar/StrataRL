@@ -1,7 +1,7 @@
 model_id: Qwen/Qwen2.5-3B-Instruct
 device: cuda
 dtype: float16
-num_steps: 1000
+num_steps: 500
 G: 2
 batch_size: 1
 grad_accum: 4

@@ -1,0 +1,4 @@
+Loading base model Qwen/Qwen2.5-3B-Instruct on mps...
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:00<00:00,  9.25it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:00<00:00, 10.90it/s]
+/Users/atharvamendhulkar/Desktop/RLverify/.venv/lib/python3.14/site-packages/peft/config.py:162: UserWarning: Unexpected keyword arguments ['alora_invocation_tokens', 'arrow_config', 'corda_config', 'ensure_weight_tying', 'lora_ga_config', 'peft_version', 'qalora_group_size', 'target_parameters', 'trainable_token_indices', 'use_bdlora', 'use_qalora'] for class LoraConfig, these are ignored. This probably means that you're loading a configuration file that was saved using a higher version of the library and additional parameters have been introduced since. It is highly recommended to upgrade the PEFT version before continuing (e.g. by running `pip install -U peft`).
+  warnings.warn(

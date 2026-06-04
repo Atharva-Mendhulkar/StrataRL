@@ -32,6 +32,12 @@ class UCBCurriculumScheduler:
         chosen = np.random.choice(domains, p=probs)
         return chosen
 
+    MIN_DOMAIN_WEIGHT = {
+        "strategyqa": 0.15,
+        "gsm8k":      0.10,
+        "mmlu":       0.10,
+    }
+
     def get_weights(self) -> Dict[str, float]:
         """Compute sampling weights based on UCB and collapse status."""
         ucb_values = {}
@@ -52,6 +58,10 @@ class UCBCurriculumScheduler:
                 val *= 0.5   # Reduce weight for broken domains to allow recovery check
                 
             ucb_values[d] = val
+
+        for domain, floor in self.MIN_DOMAIN_WEIGHT.items():
+            if domain in ucb_values:
+                ucb_values[domain] = max(ucb_values[domain], floor)
 
         # Softmax or simple normalization to get probabilities
         total = sum(ucb_values.values())
