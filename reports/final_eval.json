@@ -1,22 +1,28 @@
 {
-  "model_id": "Qwen/Qwen2.5-3B-Instruct + outputs/final",
+  "model_id": "Qwen/Qwen2.5-3B-Instruct + outputs1/final",
   "device": "mps",
   "n_samples_per_bench": 20,
   "benchmarks": {
     "gsm8k": {
-      "greedy_acc": 0.5500,
-      "baseline_lit": 0.4500,
-      "target_met": true
+      "benchmark": "gsm8k",
+      "n_samples": 20,
+      "greedy_acc": 0.45,
+      "avg_think_len": 29.4,
+      "baseline_lit": 0.867
     },
     "mmlu": {
-      "greedy_acc": 0.6000,
-      "baseline_lit": 0.5000,
-      "target_met": true
+      "benchmark": "mmlu",
+      "n_samples": 20,
+      "greedy_acc": 0.25,
+      "avg_think_len": 44.35,
+      "baseline_lit": 0.644
     },
     "strategyqa": {
-      "greedy_acc": 0.7000,
-      "baseline_lit": 0.6000,
-      "target_met": true
+      "benchmark": "strategyqa",
+      "n_samples": 20,
+      "greedy_acc": 0.8,
+      "avg_think_len": 126.35,
+      "baseline_lit": 0.65
     }
   }
 }

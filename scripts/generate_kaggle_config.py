@@ -64,8 +64,8 @@ def generate_kaggle_config(
         "recompute_interval":  25,
 
         # Rewards
-        "w_outcome":    0.70,
-        "w_struct":     0.30,
+        "w_outcome":    0.50,
+        "w_struct":     0.50,
         "reward_clip":  2.0,
 
         # Curriculum
