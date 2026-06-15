@@ -224,6 +224,12 @@ Following the Kaggle migration and KL-Divergence bug resolution, the model was e
 
 > **Summary:** The model successfully improved on GSM8K and MMLU, but experienced catastrophic forgetting on StrategyQA. Because StrategyQA started with a high baseline (0.900), the UCB scheduler likely under-sampled it compared to the weaker domains, allowing gradient pressure from MMLU/GSM8K to overwrite StrategyQA's internal representations.
 
+### Post-Mortem: Reward Hacking & The Brevity Bias (Step 500)
+A subsequent 500-step Kaggle run featuring a fixed UCB Scheduler (`MIN_DOMAIN_WEIGHT`) revealed a severe reward hacking vulnerability: `avg_think_len` plummeted to ~30 tokens across all domains, causing accuracy to regress universally. The model abandoned reasoning due to a compounding "brevity bias" created by two interacting flaws:
+1. **The Empty-Tag Loophole:** The structural reward originally only checked if the entire `<think>` block was long enough, allowing the model to hit the character minimum using just empty syntax overhead (e.g. `<decompose></decompose>`), earning a `1.0` structural reward for zero actual reasoning.
+2. **Length Normalization Bug:** `advantage.py` previously scaled advantages by `1/sqrt(L)`. Since the model could achieve `A_long ≈ A_short` via the empty-tag loophole, dividing by `L` heavily penalized long, correct reasoning traces in favor of lucky short guesses.
+
+**Patches Applied (I-10, I-11, I-12):** Length normalization has been disabled by default, and a strict `MIN_TAG_CONTENT_CHARS = 15` has been implemented for every required tag to close the loophole. `w_outcome` and `w_struct` have been rebalanced to `0.5 / 0.5`.
 
 ## 5. M4 Local Setup
 
@@ -381,8 +387,8 @@ recompute_interval: 25        # periodic recompute (not every step)
 load_ref_model:    false       # π_ref = π_old, ADR in policy_update.py
 
 domains:           ["gsm8k", "mmlu", "strategyqa"]
-w_outcome:         0.70        # auto-bumps to 0.85 if Δ_O/S attack
-w_struct:          0.30
+w_outcome:         0.50        # rebalanced post step-500 regression
+w_struct:          0.50
 reward_clip:       2.0
 ```
 
@@ -568,4 +574,4 @@ python scripts/generate_report.py
 
 ---
 
-*StrataRL v2.0 | Infrastructure-Certified | 9 patches applied | 3B MPS-verified*
+*StrataRL v2.0 | Infrastructure-Certified | 12 patches applied | 3B MPS-verified*

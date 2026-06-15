@@ -88,7 +88,7 @@ Sharks live in water. Chihuahuas live on land.
     def test_think_too_short_for_gsm8k(self):
         """< 80 chars in <think> for gsm8k must fail."""
         completion = "<think>\n<decompose>x</decompose><compute>y</compute><verify>z</verify>\n</think><answer>42</answer>"
-        assert structural_reward(completion, domain="gsm8k") == 0.8
+        assert structural_reward(completion, domain="gsm8k") == 0.4
 
 
 # ── Outcome verifier tests ────────────────────────────────────────────────────

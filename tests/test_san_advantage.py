@@ -83,7 +83,7 @@ class TestLengthNorm:
         """Completions > 512 tokens get same normalization factor."""
         advantages = torch.tensor([[1.0, 1.0]])
         lengths    = [[600, 800]]   # both > 512
-        expanded   = expand_advantages_to_tokens(advantages, lengths)
+        expanded   = expand_advantages_to_tokens(advantages, lengths, use_length_norm=True)
         # Both get factor 1/sqrt(512) — they should have same per-token advantage
         adv_600 = expanded[:600].mean().item()
         adv_800 = expanded[600:].mean().item()
@@ -97,7 +97,7 @@ class TestLengthNorm:
         """
         advantages = torch.tensor([[1.0, 1.0]])
         lengths    = [[100, 400]]
-        expanded   = expand_advantages_to_tokens(advantages, lengths)
+        expanded   = expand_advantages_to_tokens(advantages, lengths, use_length_norm=True)
         adv_100 = expanded[:100].mean().item()
         adv_400 = expanded[100:].mean().item()
         # factor 1/sqrt(100) = 0.1, 1/sqrt(400) = 0.05

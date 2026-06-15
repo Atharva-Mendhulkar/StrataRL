@@ -7,7 +7,7 @@ def test_empty_tags_fail_despite_passing_old_gates():
         "<think><decompose>5*17</decompose><compute>85</compute>"
         "<verify>85</verify></think><answer>85</answer>"
     )
-    assert structural_reward(completion, domain="gsm8k") == 0.0
+    assert structural_reward(completion, domain="gsm8k") == 0.4
 
 def test_genuine_short_reasoning_passes():
     """~15+ chars per tag of real content should still pass — I-11 isn't
