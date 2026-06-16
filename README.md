@@ -214,18 +214,15 @@ The GSM8K/MMLU gaps confirm that strict template formatting is the primary const
 
 ## 4. Final Validation Results (Phase 7)
 
-Following the Kaggle migration and KL-Divergence bug resolution, the model was evaluated across 20 samples per benchmark. The PEFT adapter (`outputs/final`) successfully improved the model's reasoning capabilities across all targeted domains, successfully matching the StrataRL pipeline goals.
+Following the initial execution, the model was evaluated across 20 samples per benchmark. The PEFT adapter (`outputs1/final`) revealed a universal regression in reasoning capabilities across all targeted domains.
 
 | Benchmark | Baseline (Measured) | Post-RL | Delta | Lit Baseline | Target Met |
 |-----------|--------------------|---------|-------|--------------|------------|
-| **GSM8K** | 0.5000 | 0.5500 | +0.0500 | 0.4500 | YES |
-| **MMLU** | 0.3000 | 0.6000 | +0.3000 | 0.5000 | YES |
-| **STRATEGYQA** | 0.9000 | 0.7000 | -0.2000 | 0.6000 | NO — REGRESSION |
+| **GSM8K** | 0.5000 | 0.4500 | -0.0500 | 0.8670 | NO — REGRESSION |
+| **MMLU** | 0.3000 | 0.2500 | -0.0500 | 0.6440 | NO — REGRESSION |
+| **STRATEGYQA** | 0.9000 | 0.8000 | -0.1000 | 0.6500 | NO — REGRESSION |
 
-> **Summary:** The model successfully improved on GSM8K and MMLU, but experienced catastrophic forgetting on StrategyQA. Because StrategyQA started with a high baseline (0.900), the UCB scheduler likely under-sampled it compared to the weaker domains, allowing gradient pressure from MMLU/GSM8K to overwrite StrategyQA's internal representations.
-
-### Post-Mortem: Reward Hacking & The Brevity Bias (Step 500)
-A subsequent 500-step Kaggle run featuring a fixed UCB Scheduler (`MIN_DOMAIN_WEIGHT`) revealed a severe reward hacking vulnerability: `avg_think_len` plummeted to ~30 tokens across all domains, causing accuracy to regress universally. The model abandoned reasoning due to a compounding "brevity bias" created by two interacting flaws:
+> **Summary:** The model experienced universal regressions across all three benchmarks. Analysis revealed a severe reward hacking vulnerability: `avg_think_len` plummeted to ~30-40 tokens across domains, causing accuracy to drop. The model abandoned reasoning due to a compounding "brevity bias" created by two interacting flaws:
 1. **The Empty-Tag Loophole:** The structural reward originally only checked if the entire `<think>` block was long enough, allowing the model to hit the character minimum using just empty syntax overhead (e.g. `<decompose></decompose>`), earning a `1.0` structural reward for zero actual reasoning.
 2. **Length Normalization Bug:** `advantage.py` previously scaled advantages by `1/sqrt(L)`. Since the model could achieve `A_long ≈ A_short` via the empty-tag loophole, dividing by `L` heavily penalized long, correct reasoning traces in favor of lucky short guesses.
 
