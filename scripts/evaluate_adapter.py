@@ -18,9 +18,16 @@ def main():
     else:
         device = "cpu"
     print(f"Loading base model Qwen/Qwen2.5-3B-Instruct on {device}...")
+    if device == "mps":
+        dtype = torch.bfloat16
+    elif device == "cuda":
+        dtype = torch.float16
+    else:
+        dtype = torch.float32
+
     base_model = AutoModelForCausalLM.from_pretrained(
         "Qwen/Qwen2.5-3B-Instruct",
-        torch_dtype=torch.bfloat16 if device=="mps" else torch.float32,
+        torch_dtype=dtype,
     ).to(device)
     
     print(f"Applying adapter from {args.adapter_path}...")
