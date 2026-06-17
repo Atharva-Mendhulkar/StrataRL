@@ -71,7 +71,6 @@ class KaggleRolloutEngine:
                     pad_token_id            = eos_id,
                     eos_token_id            = eos_id,
                     use_cache               = True,
-                    cache_implementation    = "static",
                 )
 
                 with torch.no_grad():

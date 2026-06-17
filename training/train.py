@@ -15,7 +15,7 @@ import argparse
 import numpy as np
 import os
 from collections import defaultdict
-from peft import get_peft_model, LoraConfig, TaskType
+from peft import get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training
 from transformers import AutoTokenizer
 
 from engines.kaggle_rollout_engine    import build_kaggle_engine
@@ -98,8 +98,18 @@ def run_kaggle_training(config_path: str, run_name: str = None, wandb_project: s
         model_id     = cfg["model_id"],
         load_in_4bit = cfg.get("load_in_4bit", True),
     )
-    model     = engine.model
     tokenizer = engine.tokenizer
+
+    # Prepare base model for quantized training:
+    #   - Casts layernorm to float32 (prevents NaN with 4-bit)
+    #   - Enables gradient checkpointing with use_reentrant=False
+    #     (use_reentrant=True crashes with frozen/quantized base layers)
+    #   - Enables input embedding gradients for gradient flow
+    base_model = prepare_model_for_kbit_training(
+        engine.model,
+        use_gradient_checkpointing=True,
+        gradient_checkpointing_kwargs={"use_reentrant": False},
+    )
 
     # Apply LoRA
     lora_config = LoraConfig(
@@ -109,12 +119,11 @@ def run_kaggle_training(config_path: str, run_name: str = None, wandb_project: s
         target_modules = cfg["target_modules"],
         bias           = "none",
     )
-    model = get_peft_model(model, lora_config)
+    model = get_peft_model(base_model, lora_config)
     model.print_trainable_parameters()
-    
-    # Critical memory optimization: enable gradient checkpointing
-    # This prevents OOM errors when processing long <think> traces
-    model.gradient_checkpointing_enable()
+
+    # Update engine so rollouts use the LoRA-adapted model
+    engine.model = model
 
     optimizer = torch.optim.AdamW(
         model.parameters(),
@@ -158,6 +167,9 @@ def run_kaggle_training(config_path: str, run_name: str = None, wandb_project: s
             max_new_tokens = cfg.get("max_new_tokens", 2048),
             min_new_tokens = cfg.get("min_new_tokens", 100),
         )
+
+        # Free rollout VRAM before training forward pass
+        torch.cuda.empty_cache()
 
         # I-4: dynamic outcome weight
         w_outcome = monitor.delta_os_tracker.get_outcome_weight_override() or cfg.get("w_outcome", 0.7)
@@ -223,19 +235,21 @@ def run_kaggle_training(config_path: str, run_name: str = None, wandb_project: s
         if step % eval_interval == 0 and step > 0:
             eval_results = evaluator.run_all(step=step, greedy_only=True)
             for bench, r in eval_results.items():
+                delta = r["greedy_acc"] - r["baseline_lit"]
                 wandb.log({
                     f"eval/{bench}/greedy_acc":    r["greedy_acc"],
-                    f"eval/{bench}/delta":         r["delta"],
-                    f"eval/{bench}/target_met":    int(r["target_met"]),
+                    f"eval/{bench}/delta":         delta,
+                    f"eval/{bench}/target_met":    int(delta >= 0),
                     f"eval/{bench}/avg_think_len": r["avg_think_len"],
                 }, step=step)
 
             # MMLU negative control — catastrophic forgetting gate
             mmlu_acc = eval_results.get("mmlu", {}).get("greedy_acc", 1.0)
-            if mmlu_acc < BENCHMARKS["mmlu"]["baseline"] - 0.03:
+            mmlu_baseline = BENCHMARKS["mmlu"]["baseline_lit"]
+            if mmlu_acc < mmlu_baseline - 0.03:
                 wandb.alert(
                     title=f"CATASTROPHIC FORGETTING: MMLU={mmlu_acc:.3f}",
-                    text=f"MMLU dropped below baseline by {(BENCHMARKS['mmlu']['baseline'] - mmlu_acc)*100:.1f}%.",
+                    text=f"MMLU dropped below baseline by {(mmlu_baseline - mmlu_acc)*100:.1f}%.",
                     level=wandb.AlertLevel.ERROR,
                 )
 
