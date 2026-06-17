@@ -175,14 +175,17 @@ class BenchmarkEvaluator:
         think_lengths  = []
         total          = len(ds)
 
-        for item in ds:
+        for idx, item in enumerate(ds):
             prompt, gt = formatter(item)
-            greedy_completions = self.generate([prompt], temperature=0.0, max_tokens=512)
+            greedy_completions = self.generate([prompt], temperature=0.0, max_tokens=256)
             comp = greedy_completions[0]
             pred = extract_answer(comp)
-            if cfg["verifier"](pred, gt):
+            correct = cfg["verifier"](pred, gt)
+            if correct:
                 greedy_correct += 1
             think_lengths.append(extract_think_length(comp))
+            if (idx + 1) % 10 == 0 or (idx + 1) == total:
+                print(f"    [{bench_name}] {idx+1}/{total}  running_acc={greedy_correct/(idx+1):.3f}", flush=True)
 
         greedy_acc  = greedy_correct / total
         avg_think   = np.mean(think_lengths) if think_lengths else 0
