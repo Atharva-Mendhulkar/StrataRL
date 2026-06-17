@@ -111,6 +111,10 @@ def run_kaggle_training(config_path: str, run_name: str = None, wandb_project: s
     )
     model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
+    
+    # Critical memory optimization: enable gradient checkpointing
+    # This prevents OOM errors when processing long <think> traces
+    model.gradient_checkpointing_enable()
 
     optimizer = torch.optim.AdamW(
         model.parameters(),
