@@ -174,16 +174,29 @@ class BenchmarkEvaluator:
         greedy_correct = 0
         think_lengths  = []
         total          = len(ds)
+        eval_batch_size = 8  # Process 8 samples at once for faster eval
 
-        for idx, item in enumerate(ds):
-            prompt, gt = formatter(item)
-            greedy_completions = self.generate([prompt], temperature=0.0, max_tokens=256)
-            comp = greedy_completions[0]
-            pred = extract_answer(comp)
-            correct = cfg["verifier"](pred, gt)
-            if correct:
-                greedy_correct += 1
-            think_lengths.append(extract_think_length(comp))
+        for batch_start in range(0, total, eval_batch_size):
+            batch_end = min(batch_start + eval_batch_size, total)
+            batch_items = [ds[i] for i in range(batch_start, batch_end)]
+
+            prompts_batch = []
+            gts_batch = []
+            for item in batch_items:
+                prompt, gt = formatter(item)
+                prompts_batch.append(prompt)
+                gts_batch.append(gt)
+
+            greedy_completions = self.generate(prompts_batch, temperature=0.0, max_tokens=256)
+
+            for i, (comp, gt) in enumerate(zip(greedy_completions, gts_batch)):
+                pred = extract_answer(comp)
+                correct = cfg["verifier"](pred, gt)
+                if correct:
+                    greedy_correct += 1
+                think_lengths.append(extract_think_length(comp))
+
+            idx = batch_end - 1
             if (idx + 1) % 10 == 0 or (idx + 1) == total:
                 print(f"    [{bench_name}] {idx+1}/{total}  running_acc={greedy_correct/(idx+1):.3f}", flush=True)
 

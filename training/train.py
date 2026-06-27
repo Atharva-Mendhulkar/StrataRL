@@ -233,7 +233,8 @@ def run_kaggle_training(config_path: str, run_name: str = None, wandb_project: s
         # Empirical eval
         eval_interval = cfg.get("eval_interval", 100)
         if step % eval_interval == 0 and step > 0:
-            eval_results = evaluator.run_all(step=step, greedy_only=True)
+            eval_n = cfg.get("eval_n_samples", 20)
+            eval_results = evaluator.run_all(step=step, greedy_only=True, n_samples=eval_n)
             for bench, r in eval_results.items():
                 delta = r["greedy_acc"] - r["baseline_lit"]
                 wandb.log({

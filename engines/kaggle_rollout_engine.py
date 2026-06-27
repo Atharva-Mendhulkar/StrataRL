@@ -73,22 +73,24 @@ class KaggleRolloutEngine:
                     use_cache               = True,
                 )
 
-                with torch.no_grad():
-                    raw_logits = self.model(outputs.sequences).logits
+                # Use scores already returned by generate() — no redundant forward pass
+                # outputs.scores is a tuple of (num_seqs, vocab_size) tensors, one per step
+                stacked_scores = torch.stack(outputs.scores, dim=1)  # (num_seqs, gen_len, vocab)
 
                 for seq_idx in range(num_to_generate):
                     full_ids = outputs.sequences[seq_idx]
                     comp_ids = full_ids[prompt_len:].tolist()
 
+                    # Compute log-probs from the already-available scores
+                    seq_scores = stacked_scores[seq_idx]  # (gen_len, vocab)
+                    log_probs_all = F.log_softmax(seq_scores, dim=-1)  # (gen_len, vocab)
+
                     token_logps = []
-                    seq_logits = raw_logits[seq_idx]
                     for step_idx in range(len(comp_ids)):
-                        idx = prompt_len + step_idx - 1
-                        if idx >= seq_logits.shape[0]:
+                        if step_idx >= log_probs_all.shape[0]:
                             break
-                        log_probs_step = F.log_softmax(seq_logits[idx], dim=-1)
-                        chosen_token   = comp_ids[step_idx]
-                        token_logps.append(log_probs_step[chosen_token].item())
+                        chosen_token = comp_ids[step_idx]
+                        token_logps.append(log_probs_all[step_idx, chosen_token].item())
 
                     # EOS truncation safety
                     if eos_id in comp_ids:
@@ -144,9 +146,15 @@ class KaggleRolloutEngine:
         self.model.eval()
         completions = []
 
-        for prompt in prompts:
+        # Batch prompts together with left-padding for efficient generation
+        # Left-padding is required for batched generation (right-padding
+        # causes the model to continue generating padding tokens)
+        original_padding_side = self.tokenizer.padding_side
+        self.tokenizer.padding_side = "left"
+
+        try:
             inputs = self.tokenizer(
-                prompt, return_tensors="pt", add_special_tokens=True
+                prompts, return_tensors="pt", padding=True, add_special_tokens=True
             ).to(self.device)
             prompt_ids = inputs.input_ids
             attention_mask = inputs.attention_mask
@@ -170,10 +178,16 @@ class KaggleRolloutEngine:
 
             outputs = self.model.generate(prompt_ids, **gen_kwargs)
 
-            for output in outputs:
-                comp_ids = output[prompt_ids.shape[1]:]
+            for seq_idx, output in enumerate(outputs):
+                # Each prompt may have different padding, so find where real tokens start
+                prompt_len = attention_mask[seq_idx // n].sum().item()
+                padded_prompt_len = prompt_ids.shape[1]
+                # Completion starts after the padded prompt
+                comp_ids = output[padded_prompt_len:]
                 text = self.tokenizer.decode(comp_ids, skip_special_tokens=True)
                 completions.append(text)
+        finally:
+            self.tokenizer.padding_side = original_padding_side
 
         self.model.train()
         return completions
