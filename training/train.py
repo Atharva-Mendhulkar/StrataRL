@@ -38,13 +38,20 @@ def _sample_batch(samples, batch_size):
 def _pack_rollouts(rollouts, tokenizer, device):
     all_input_ids, all_att_masks, all_comp_masks, all_old_lps = [], [], [], []
     max_len = 0
+    
+    def _tokenize_prompt(prompt):
+        if isinstance(prompt, list):
+            prompt_str = tokenizer.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True)
+            return tokenizer(prompt_str, add_special_tokens=False).input_ids
+        return tokenizer(prompt, add_special_tokens=True).input_ids
+
     for r in rollouts:
-        prompt_ids = tokenizer(r["prompt"], add_special_tokens=True).input_ids
+        prompt_ids = _tokenize_prompt(r["prompt"])
         for comp_ids in r["token_ids"]:
             max_len = max(max_len, len(prompt_ids) + len(comp_ids))
 
     for r in rollouts:
-        prompt_ids = tokenizer(r["prompt"], add_special_tokens=True).input_ids
+        prompt_ids = _tokenize_prompt(r["prompt"])
         start_idx  = r["completion_start_idx"]
         for i, comp_ids in enumerate(r["token_ids"]):
             full_ids = prompt_ids + comp_ids
