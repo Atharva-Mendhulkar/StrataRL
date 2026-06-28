@@ -21,13 +21,13 @@ class M4RolloutEngine:
     @torch.no_grad()
     def generate(
         self,
-        prompts: List[str],
-        G: int = 4,
-        temperature: float = 0.7,
-        top_p: float = 0.9,
-        top_k: int = 40,
-        max_new_tokens: int = 256,
-        min_new_tokens: int = 20,
+        prompts:        List,
+        G:              int   = 4,
+        temperature:    float = 0.7,
+        top_p:          float = 0.9,
+        top_k:          int   = 40,
+        max_new_tokens: int   = 256,
+        min_new_tokens: int   = 20,
     ) -> List[Dict]:
         """
         Generate G completions per prompt and capture per-token logprobs.
@@ -40,14 +40,11 @@ class M4RolloutEngine:
         eos_id = self.tokenizer.eos_token_id
 
         for prompt in prompts:
-
-            inputs = self.tokenizer(
-                prompt,
-                return_tensors="pt",
-                add_special_tokens=True,
-                padding=True,
-                truncation=True,
-            )
+            if isinstance(prompt, list):
+                prompt_str = self.tokenizer.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True)
+                inputs = self.tokenizer(prompt_str, return_tensors="pt", add_special_tokens=False, padding=True, truncation=True).to(self.device)
+            else:
+                inputs = self.tokenizer(prompt, return_tensors="pt", add_special_tokens=True, padding=True, truncation=True).to(self.device)
 
             prompt_ids = inputs.input_ids.to(self.device)
             attention_mask = inputs.attention_mask.to(self.device)
@@ -197,26 +194,33 @@ class M4RolloutEngine:
         return rollouts
 
     @torch.no_grad()
+    @torch.no_grad()
     def generate_for_eval(
         self,
-        prompts: List[str],
+        prompts: List,
         temperature: float = 0.0,
-        max_tokens: int = 256,
+        max_tokens: int = 512,
         n: int = 1,
     ) -> List[str]:
-        """
-        Greedy or sampled generation for evaluation.
-        Returns flat list of completions.
-        """
-
         self.model.eval()
-
         completions = []
-
-        for prompt in prompts:
-
+        
+        # Batch prompts together with left-padding for efficient generation
+        original_padding_side = self.tokenizer.padding_side
+        self.tokenizer.padding_side = "left"
+        
+        formatted_prompts = []
+        has_chat_template = False
+        for p in prompts:
+            if isinstance(p, list):
+                formatted_prompts.append(self.tokenizer.apply_chat_template(p, tokenize=False, add_generation_prompt=True))
+                has_chat_template = True
+            else:
+                formatted_prompts.append(p)
+                
+        try:
             inputs = self.tokenizer(
-                prompt, return_tensors="pt", add_special_tokens=True
+                formatted_prompts, return_tensors="pt", padding=True, truncation=True, add_special_tokens=not has_chat_template
             ).to(self.device)
             prompt_ids = inputs.input_ids
             attention_mask = inputs.attention_mask
@@ -241,15 +245,14 @@ class M4RolloutEngine:
             outputs = self.model.generate(prompt_ids, **gen_kwargs)
 
             for output in outputs:
-
                 comp_ids = output[prompt_ids.shape[1]:]
-
                 text = self.tokenizer.decode(
                     comp_ids,
                     skip_special_tokens=True
                 )
-
                 completions.append(text)
+        finally:
+            self.tokenizer.padding_side = original_padding_side
 
         self.model.train()
 

@@ -96,43 +96,34 @@ BENCHMARKS = {
 
 MMLU_INT_TO_LETTER = {0: "A", 1: "B", 2: "C", 3: "D"}
 
-def format_gsm8k_prompt(item: dict) -> Tuple[str, str]:
+def format_gsm8k_prompt(item: dict) -> Tuple[list, str]:
     q  = item["question"]
     gt = item["answer"].split("####")[-1].strip()
-    prompt = (
-        "You are a precise math reasoning assistant. "
-        "Solve the following problem step by step. "
-        "Show your internal reasoning process inside <think> tags. "
-        "Place only your final numeric answer inside <answer> tags.\n\n"
-        f"Question: {q}\n"
-    )
+    prompt = [
+        {"role": "system", "content": "You are a precise math reasoning assistant. Solve the following problem step by step. Show your internal reasoning process inside <think> tags. Place only your final numeric answer inside <answer> tags."},
+        {"role": "user", "content": f"Question: {q}"}
+    ]
     return prompt, gt
 
-def format_mmlu_prompt(item: dict) -> Tuple[str, str]:
+def format_mmlu_prompt(item: dict) -> Tuple[list, str]:
     q       = item["question"]
     choices = item["choices"]
     gt_int  = item["answer"]
     gt      = MMLU_INT_TO_LETTER[gt_int]
     options = "\n".join(f"{MMLU_INT_TO_LETTER[i]}. {c}" for i, c in enumerate(choices))
-    prompt  = (
-        "You are a knowledgeable assistant. "
-        "Answer the following multiple choice question. "
-        "Think step by step inside <think> tags. "
-        "Then, write only the single letter (A, B, C, or D) corresponding to the correct answer inside <answer> tags.\n\n"
-        f"Question: {q}\n{options}\n"
-    )
+    prompt = [
+        {"role": "system", "content": "You are a knowledgeable assistant. Answer the following multiple choice question. Think step by step inside <think> tags. Then, write only the single letter (A, B, C, or D) corresponding to the correct answer inside <answer> tags."},
+        {"role": "user", "content": f"Question: {q}\n{options}"}
+    ]
     return prompt, gt
 
-def format_strategyqa_prompt(item: dict) -> Tuple[str, str]:
+def format_strategyqa_prompt(item: dict) -> Tuple[list, str]:
     q  = item["question"]
     gt = "yes" if item["answer"] else "no"
-    prompt = (
-        "You are a logical reasoning assistant. "
-        "Answer the following yes/no question. "
-        "Explain your reasoning inside <think> tags. "
-        "Finally, write only 'yes' or 'no' inside <answer> tags.\n\n"
-        f"Question: {q}\n"
-    )
+    prompt = [
+        {"role": "system", "content": "You are a logical reasoning assistant. Answer the following yes/no question. Explain your reasoning inside <think> tags. Finally, write only 'yes' or 'no' inside <answer> tags."},
+        {"role": "user", "content": f"Question: {q}"}
+    ]
     return prompt, gt
 
 FORMATTERS = {

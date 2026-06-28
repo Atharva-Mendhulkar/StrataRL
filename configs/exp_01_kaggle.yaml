@@ -1,7 +1,7 @@
 model_id: Qwen/Qwen2.5-3B-Instruct
 device: cuda
 dtype: float16
-num_steps: 300
+num_steps: 150
 G: 4
 batch_size: 1
 grad_accum: 4
@@ -41,6 +41,6 @@ domains:
 - strategyqa
 samples_per_domain: 100
 ucb_c: 0.5
-eval_interval: 150
+eval_interval: 50
 eval_n_samples: 20
 wandb_project: stratarl_kaggle_3b

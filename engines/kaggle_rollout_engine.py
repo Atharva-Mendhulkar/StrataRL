@@ -25,8 +25,8 @@ class KaggleRolloutEngine:
     @torch.no_grad()
     def generate(
         self,
-        prompts:        List[str],
-        G:              int   = 8,
+        prompts:        List,
+        G:              int   = 4,
         temperature:    float = 0.85,
         top_p:          float = 0.95,
         max_new_tokens: int   = 2048,
@@ -37,9 +37,12 @@ class KaggleRolloutEngine:
         eos_id   = self.tokenizer.eos_token_id
 
         for prompt in prompts:
-            inputs = self.tokenizer(
-                prompt, return_tensors="pt", add_special_tokens=True
-            ).to(self.device)
+            if isinstance(prompt, list):
+                prompt_str = self.tokenizer.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True)
+                inputs = self.tokenizer(prompt_str, return_tensors="pt", add_special_tokens=False).to(self.device)
+            else:
+                inputs = self.tokenizer(prompt, return_tensors="pt", add_special_tokens=True).to(self.device)
+                
             prompt_ids = inputs.input_ids
             attention_mask = inputs.attention_mask
             prompt_len = prompt_ids.shape[1]
@@ -138,7 +141,7 @@ class KaggleRolloutEngine:
     @torch.no_grad()
     def generate_for_eval(
         self,
-        prompts:     List[str],
+        prompts:     List,
         temperature: float = 0.0,
         max_tokens:  int   = 512,
         n:           int   = 1,
@@ -147,14 +150,21 @@ class KaggleRolloutEngine:
         completions = []
 
         # Batch prompts together with left-padding for efficient generation
-        # Left-padding is required for batched generation (right-padding
-        # causes the model to continue generating padding tokens)
         original_padding_side = self.tokenizer.padding_side
         self.tokenizer.padding_side = "left"
+        
+        formatted_prompts = []
+        has_chat_template = False
+        for p in prompts:
+            if isinstance(p, list):
+                formatted_prompts.append(self.tokenizer.apply_chat_template(p, tokenize=False, add_generation_prompt=True))
+                has_chat_template = True
+            else:
+                formatted_prompts.append(p)
 
         try:
             inputs = self.tokenizer(
-                prompts, return_tensors="pt", padding=True, add_special_tokens=True
+                formatted_prompts, return_tensors="pt", padding=True, add_special_tokens=not has_chat_template
             ).to(self.device)
             prompt_ids = inputs.input_ids
             attention_mask = inputs.attention_mask
