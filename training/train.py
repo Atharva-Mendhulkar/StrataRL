@@ -200,7 +200,7 @@ def run_kaggle_training(config_path: str, run_name: str = None, wandb_project: s
             advantages = compute_global_advantages(combined_rewards)
             
         comp_lengths = [[len(r["token_ids"][j]) for j in range(cfg["G"])] for r in rollouts]
-        token_advs   = expand_advantages_to_tokens(advantages, comp_lengths, use_length_norm=True)
+        token_advs   = expand_advantages_to_tokens(advantages, comp_lengths, use_length_norm=False)
 
         input_ids, attention_mask, completion_mask, old_logprobs = _pack_rollouts(
             rollouts, tokenizer, device
