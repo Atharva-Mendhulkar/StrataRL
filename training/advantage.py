@@ -9,6 +9,34 @@ SAN_ZERO_VAR_THRESH   = 1e-2
 SAN_LOW_VAR_THRESH    = 0.05
 
 
+def compute_global_advantages(
+    rewards: torch.Tensor,
+    eps: float = 1e-8,
+) -> torch.Tensor:
+    """
+    Standard GRPO global advantage normalization (Condition B).
+    Computes mean and std across the entire batch, ignoring domain strata.
+    Applies the same clipping and zero-variance rules as SAN for a fair ablation.
+    """
+    flat = rewards.flatten()
+    mu = flat.mean()
+    sigma = flat.std()
+
+    if sigma < SAN_ZERO_VAR_THRESH:
+        centered = rewards - mu
+        return torch.clamp(centered, -ADVANTAGE_CLIP, ADVANTAGE_CLIP)
+    
+    if sigma < SAN_LOW_VAR_THRESH:
+        damping_factor = sigma.item() / SAN_LOW_VAR_THRESH
+        normalized = (rewards - mu) / (sigma + eps)
+        dampened = normalized * damping_factor
+        return torch.clamp(dampened, -ADVANTAGE_CLIP, ADVANTAGE_CLIP)
+
+    normalized = (rewards - mu) / (sigma + eps)
+    return torch.clamp(normalized, -ADVANTAGE_CLIP, ADVANTAGE_CLIP)
+
+
+
 def compute_san_advantages(
     rewards:  torch.Tensor,   # [B, G] — GDPO-normalized composite rewards
     domains:  List[str],

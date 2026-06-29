@@ -32,9 +32,10 @@ top_p: 0.95
 vllm_gpu_util: 0.5
 vllm_sync_interval: 10
 recompute_interval: 25
-w_outcome: 0.5
-w_struct: 0.5
+w_outcome: 1.0
+w_struct: 0.0
 reward_clip: 2.0
+use_san: false
 domains:
 - gsm8k
 - mmlu

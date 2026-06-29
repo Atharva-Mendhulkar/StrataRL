@@ -65,7 +65,12 @@ def load_model(device, adapter_path=None):
 @torch.no_grad()
 def generate_one(model, tokenizer, prompt, device, max_tokens=512):
     """Generate a single greedy completion and return full details."""
-    inputs = tokenizer(prompt, return_tensors="pt", add_special_tokens=True).to(device)
+    if isinstance(prompt, list):
+        prompt_str = tokenizer.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True)
+        inputs = tokenizer(prompt_str, return_tensors="pt", add_special_tokens=False).to(device)
+    else:
+        inputs = tokenizer(prompt, return_tensors="pt", add_special_tokens=True).to(device)
+        
     prompt_len = inputs.input_ids.shape[1]
 
     start = time.time()

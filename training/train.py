@@ -191,8 +191,14 @@ def run_kaggle_training(config_path: str, run_name: str = None, wandb_project: s
             step      = step,
         )
 
-        # I-5: SAN
-        advantages   = compute_san_advantages(combined_rewards, domains)
+        # I-5: SAN vs Global Advantages
+        use_san = cfg.get("use_san", True)
+        if use_san:
+            advantages = compute_san_advantages(combined_rewards, domains)
+        else:
+            from training.advantage import compute_global_advantages
+            advantages = compute_global_advantages(combined_rewards)
+            
         comp_lengths = [[len(r["token_ids"][j]) for j in range(cfg["G"])] for r in rollouts]
         token_advs   = expand_advantages_to_tokens(advantages, comp_lengths, use_length_norm=True)
 
