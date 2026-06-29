@@ -60,6 +60,7 @@ class SmokeTestMonitor:
         self.config = config
         self.delta_os_tracker = DeltaOSTracker()
         self.history = []
+        self.kl_critical_count = 0
 
     def log_step(
         self,
@@ -99,7 +100,12 @@ class SmokeTestMonitor:
             alerts.append("DIVERSE_NONSENSE_ATTACK")
             
         if losses.get("raw_kl_mean", 0) > 0.10:
+            self.kl_critical_count += 1
             alerts.append("KL_DIVERGENCE_CRITICAL: policy drifting too fast")
+            if self.kl_critical_count >= 10:
+                alerts.append("ABORT_KL_COLLAPSE")
+        else:
+            self.kl_critical_count = 0
 
         if losses.get("entropy", 1.0) < 0.05:
             alerts.append("ENTROPY_COLLAPSE")
