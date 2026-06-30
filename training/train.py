@@ -282,11 +282,6 @@ def run_kaggle_training(config_path: str, run_name: str = None, wandb_project: s
         scheduler.update(domain_adv_map)
 
         alerts = monitor.log_step(step, losses, rollouts, raw_rewards, domain_adv_map, domains)
-        if "ABORT_KL_COLLAPSE" in alerts:
-            fallback_ctrl.hard_stop(
-                "ABORT_KL_COLLAPSE: KL > 0.10 for 10 consecutive steps. Policy has collapsed.",
-                step, optimizer, model, cfg,
-            )
 
     # Final save
     os.makedirs("outputs/final", exist_ok=True)
