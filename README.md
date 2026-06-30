@@ -10,8 +10,7 @@
 ![W&B](https://img.shields.io/badge/Weights_&_Biases-FFBE00?logo=weightsandbiases&logoColor=white)
 ![SymPy](https://img.shields.io/badge/SymPy-3B5526?logo=sympy&logoColor=white)
 
-> Infrastructure-Certified v2.0 | 3B Verified on MPS | Ready for Kaggle P100 Migration
-
+> Infrastructure-Certified v2.0 | 3B Verified on MPS | Kaggle P100 & Colab T4 Pipeline Enabled
 StrataRL solves a specific problem standard GRPO pipelines ignore: improving reasoning simultaneously across structurally different benchmark domains (GSM8K, MMLU, StrategyQA) without catastrophic cross-domain forgetting. It introduces **Stratified Advantage Normalization (SAN)** and **domain-conditioned Structural Template rewards (ST-GRPO)** to prevent the gradient-level cross-stratum bias that single-domain RL training causes.
 
 ---
@@ -23,7 +22,7 @@ StrataRL solves a specific problem standard GRPO pipelines ignore: improving rea
 - [Actual Baselines](#3-actual-baselines)
 - [Final Validation Results (Phase 7)](#4-final-validation-results-phase-7)
 - [M4 Local Setup](#5-m4-local-setup)
-- [Kaggle Migration (Private Repo)](#6-kaggle-migration-private-repo)
+- [Kaggle & Colab Migration (Private Repo)](#6-kaggle--colab-migration-private-repo)
 - [Configuration Reference](#7-configuration-reference)
 - [Monitoring & Alerts](#8-monitoring--alerts)
 - [Ablation Matrix](#9-ablation-matrix)
@@ -314,11 +313,13 @@ python m4/m4_train.py --config m4/exp_01_local_3b.yaml
 
 ---
 
-## 6. Kaggle Migration (Private Repo)
+## 6. Kaggle & Colab Migration (Private Repo)
 
-The repository includes a ready-to-use Jupyter Notebook (`kaggle_training.ipynb`) that fully automates the Kaggle execution pipeline. This is the **recommended** method for running StrataRL on Kaggle, as it natively handles dependency conflicts (e.g. `bitsandbytes`, `vllm`, `transformers`), environment setup, and stdout streaming.
+The repository includes ready-to-use Jupyter Notebooks (`kaggle_training.ipynb` and `colab_condition_b.ipynb`) that fully automate the remote execution pipeline. This natively handles dependency conflicts (e.g. `bitsandbytes`, `vllm`, `transformers`), environment setup, and stdout streaming on free-tier Cloud GPUs.
 
-### Method A — Automated Notebook Execution (Recommended)
+### Method A — Automated Kaggle Execution (Recommended)
+
+**Time-Budget Safety Net:** Kaggle environments have a hard 12-hour timeout, after which all output files are destroyed. StrataRL's `train.py` actively monitors elapsed time and safely terminates the loop at **11.2 hours** to ensure checkpoints are permanently saved as Kaggle Dataset Outputs.
 
 **Step 1: Upload Repo as Kaggle Dataset**
 1. Zip this repository (excluding `.venv`, `__pycache__`, etc.).
@@ -356,6 +357,14 @@ subprocess.run(['git', 'clone', '--depth', '1', repo_url, '/kaggle/working/Strat
 print("[SUCCESS] Repo cloned")
 ```
 Then run the rest of the notebook normally.
+
+### Method C — Google Colab (Quota Fallback)
+
+When Kaggle's 30-hour weekly GPU quota is exhausted, you can seamlessly pivot to Google Colab's Free Tier (T4 GPU). 
+1. Zip this repository as `StrataRL-main.zip` and upload it to the root of your Google Drive.
+2. Upload `colab_condition_b.ipynb` to Colab and connect to a T4 GPU.
+3. Colab will automatically mount your Drive, unzip the codebase into `/content/`, and execute the training loop.
+*Note: Colab Free does not support true background execution. You must keep the browser tab open to prevent idle disconnects.*
 
 ## 7. Configuration Reference
 
