@@ -14,6 +14,7 @@ import wandb
 import argparse
 import numpy as np
 import os
+import time
 from collections import defaultdict
 from peft import get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training
 from transformers import AutoTokenizer
@@ -156,8 +157,17 @@ def run_kaggle_training(config_path: str, run_name: str = None, wandb_project: s
 
     current_temp = cfg.get("temperature", 0.85)
     optimizer.zero_grad()
+    
+    train_start_time = time.time()
+    time_limit_seconds = 11.2 * 3600  # 11 hours and 12 minutes
 
     for step in range(cfg["num_steps"]):
+        elapsed = time.time() - train_start_time
+        if elapsed > time_limit_seconds:
+            print(f"\n[TIME BUDGET EXCEEDED] Elapsed time {elapsed/3600:.2f}h > limit {time_limit_seconds/3600:.2f}h.")
+            print("Gracefully stopping training to preserve checkpoints before Kaggle 12h timeout...")
+            break
+
         phase  = "bootstrap" if step < 30 else "strict"
         domain = scheduler.sample_domain()
         batch  = _sample_batch(domain_data[domain], cfg["batch_size"])
